@@ -1,0 +1,3 @@
+ansible-playbook k3s.orchestration.site # this one is for k3s
+ansible-playbook install_external_dns.yml # this one is for externalDNS
+ansible-playbook install_cloudflared_manual.yml # this one is for cloudflared tunnel 

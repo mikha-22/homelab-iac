@@ -1,0 +1,66 @@
+---
+- hosts: server
+  become: yes
+  vars_prompt:
+    - name: "cloudflare_api_token"
+      prompt: "Enter your Cloudflare API token for ExternalDNS"
+      private: yes
+  tasks:
+    - name: Check if Helm is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/helm
+      register: helm_binary
+    - name: Download the Helm installation script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0755'
+      when: not helm_binary.stat.exists
+    - name: Run the Helm installation script
+      ansible.builtin.command:
+        cmd: /tmp/get_helm.sh
+      when: not helm_binary.stat.exists
+    - name: Create Cloudflare API secret as per the official guide
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: cloudflare-api-key
+            namespace: default
+          stringData:
+            apiKey: "{{ cloudflare_api_token }}"
+      delegate_to: localhost
+      become: no
+    - name: Add ExternalDNS Helm repo
+      kubernetes.core.helm_repository:
+        name: external-dns
+        repo_url: "https://kubernetes-sigs.github.io/external-dns/"
+        state: present
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    - name: Update Helm repositories
+      ansible.builtin.command:
+        cmd: /usr/local/bin/helm repo update
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: false
+    - name: Deploy ExternalDNS from Helm chart
+      kubernetes.core.helm:
+        name: external-dns
+        chart_ref: external-dns/external-dns
+        release_namespace: default
+        wait: yes
+        kubeconfig: /etc/rancher/k3s/k3s.yaml
+        values:
+          provider: cloudflare
+          env:
+            - name: CF_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-api-key
+                  key: apiKey
+          sources:
+            - ingress
+          txtOwnerId: "homelab-k3s"

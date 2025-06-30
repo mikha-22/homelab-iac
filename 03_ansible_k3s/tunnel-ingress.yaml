@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tunnel-ingress
+  namespace: default
+spec:
+  rules:
+  # This rule matches the hostname we configured in the Cloudflare dashboard.
+  - host: "tunnel.milenika.dev"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          # It forwards the traffic to our running 'whoami' application.
+          service:
+            name: whoami-service
+            port:
+              number: 80

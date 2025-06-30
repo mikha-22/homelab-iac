@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: autodns-ingress
+  annotations:
+    # This points the record to your specific Cloudflare Tunnel.
+    external-dns.alpha.kubernetes.io/target: "9bb0f9f8-9e00-4645-aa79-03121b55f063.cfargotunnel.com"
+    
+    # This is the fix to enable the orange cloud (proxy).
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+spec:
+  rules:
+  - host: "autodns.milenika.dev"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          # We can reuse the 'whoami' service that is already running.
+          service:
+            name: whoami-service
+            port:
+              number: 80
