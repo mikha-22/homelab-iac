@@ -1,0 +1,57 @@
+---
+- hosts: server
+  become: yes
+  tasks:
+    # ==> NEW SECTION: ENSURE HELM IS INSTALLED <==
+    - name: Check if Helm is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/helm
+      register: helm_binary
+
+    - name: Download the Helm installation script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0755'
+      when: not helm_binary.stat.exists
+
+    - name: Run the Helm installation script
+      ansible.builtin.command:
+        cmd: /tmp/get_helm.sh
+      when: not helm_binary.stat.exists
+    # ==> END OF NEW SECTION <==
+
+    - name: Add Cloudflare Helm repo if it doesn't exist
+      kubernetes.core.helm_repository:
+        name: cloudflare
+        repo_url: "https://cloudflare.github.io/helm-charts"
+        state: present
+
+    - name: Deploy cloudflared connector with local configuration
+      kubernetes.core.helm:
+        name: cloudflared-connector
+        chart_ref: cloudflare/cloudflared
+        release_namespace: default
+        wait: yes
+        values:
+          # Tell the chart to use the secret we created with the CLI script
+          tunnel:
+            existingSecret: tunnel-credentials
+
+          # We define the ingress rules here because we are not using
+          # Terraform for remote management. This is a "Locally-Managed Tunnel".
+          ingress:
+            # Rule 1: Funnel all traffic for your root domain to Traefik
+            - hostname: "milenika.dev"
+              service: https://traefik.kube-system.svc.cluster.local:443
+              originRequest:
+                noTLSVerify: true # Required for Traefik's self-signed cert
+
+            # Rule 2: Funnel all traffic for subdomains to Traefik
+            - hostname: "*.milenika.dev"
+              service: https://traefik.kube-system.svc.cluster.local:443
+              originRequest:
+                noTLSVerify: true
+
+            # Rule 3: Catch-all to respond with 404 for any other traffic
+            - service: http_status:404
