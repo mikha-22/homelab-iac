@@ -1,4 +1,4 @@
-#!/home/mikha/labs/homelab/ansible-homelab/ansible-venv/bin/python3
+#!/home/mikha/labs/homelab/ansible-homelab/ansible-venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

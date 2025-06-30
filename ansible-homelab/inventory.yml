@@ -1,0 +1,16 @@
+---
+k3s_cluster:
+  children:
+    server:
+      hosts:
+        192.168.1.81:
+    agent:
+      hosts:
+        192.168.1.82:
+
+  vars:
+    # This is the user for SSH access
+    ansible_user: mikha
+    
+    # This is the k3s cluster secret token
+    k3s_token: "a-very-secret-token"
