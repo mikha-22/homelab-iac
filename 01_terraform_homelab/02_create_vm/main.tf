@@ -99,8 +99,8 @@ resource "proxmox_virtual_environment_vm" "ubuntu_template" {
 # --- Define the VMs we want to create ---
 locals {
   vms_to_create = {
-    "web-server-01" = { node = "pve1", vmid = 801, ip = "192.168.1.81/24" },
-    "web-server-02" = { node = "pve2", vmid = 802, ip = "192.168.1.82/24" }
+    "dev-k3s-master-01" = { node = "pve1", vmid = 801, ip = "192.168.1.81/24" },
+    "dev-k3s-worker-01" = { node = "pve2", vmid = 802, ip = "192.168.1.82/24" }
   }
 }
 
