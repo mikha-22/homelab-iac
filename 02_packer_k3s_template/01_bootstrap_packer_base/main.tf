@@ -32,6 +32,18 @@ provider "proxmox" {
   }
 }
 
+# --- DATA SOURCE TO GET BASE IMAGE ID ---
+# Reads the state from the '01_base_images' project to find the ID
+# of the already-downloaded cloud image.
+data "terraform_remote_state" "base_images" {
+  backend = "local"
+
+  config = {
+    # CORRECTED PATH: Two '..' to go up to the project root
+    path = "../../01_create_nas/01_base_images/terraform.tfstate"
+  }
+}
+
 resource "proxmox_virtual_environment_file" "packer_auth_init" {
   content_type = "snippets"
   datastore_id = "local"
@@ -56,13 +68,6 @@ resource "proxmox_virtual_environment_file" "packer_auth_init" {
   }
 }
 
-resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
-  content_type = "iso"
-  datastore_id = "local"
-  node_name    = "pve1"
-  url          = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
-}
-
 resource "proxmox_virtual_environment_vm" "base_cloud_template" {
   name        = "ubuntu-2404-cloud-base"
   description = "DO NOT DELETE: Base cloud-image template for Packer."
@@ -71,7 +76,6 @@ resource "proxmox_virtual_environment_vm" "base_cloud_template" {
   template    = true
 
   depends_on = [
-    proxmox_virtual_environment_download_file.ubuntu_cloud_image,
     proxmox_virtual_environment_file.packer_auth_init
   ]
 
@@ -90,7 +94,7 @@ resource "proxmox_virtual_environment_vm" "base_cloud_template" {
     datastore_id = "local-lvm"
     interface    = "scsi0"
     size         = 10
-    file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
+    file_id      = data.terraform_remote_state.base_images.outputs.ubuntu_image_id
   }
   
   initialization {
