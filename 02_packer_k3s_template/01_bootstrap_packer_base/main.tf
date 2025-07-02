@@ -1,7 +1,6 @@
 # ===================================================================
-#  PHASE 1: BOOTSTRAP PACKER BASE TEMPLATE
-#  REVERTING to a generic DHCP template, as is best practice.
-#  Packer will handle the temporary static IP configuration.
+#  PHASE 1: BOOTSTRAP PACKER BASE TEMPLATE - FIXED VERSION
+#  Creates cloud-init file on SHARED storage for cross-node access
 # ===================================================================
 
 terraform {
@@ -33,20 +32,17 @@ provider "proxmox" {
 }
 
 # --- DATA SOURCE TO GET BASE IMAGE ID ---
-# Reads the state from the '01_base_images' project to find the ID
-# of the already-downloaded cloud image.
 data "terraform_remote_state" "base_images" {
   backend = "local"
-
   config = {
-    # CORRECTED PATH: Two '..' to go up to the project root
     path = "../../01_create_nas/01_base_images/terraform.tfstate"
   }
 }
 
+# --- FIXED: CREATE CLOUD-INIT FILE ON SHARED STORAGE ---
 resource "proxmox_virtual_environment_file" "packer_auth_init" {
   content_type = "snippets"
-  datastore_id = "local"
+  datastore_id = "cluster-shared-nfs"  # FIXED: Use shared storage instead of local
   node_name    = "pve1"
 
   source_raw {
@@ -99,12 +95,10 @@ resource "proxmox_virtual_environment_vm" "base_cloud_template" {
   
   initialization {
     user_data_file_id = proxmox_virtual_environment_file.packer_auth_init.id
-    datastore_id      = "local-lvm"
+    datastore_id      = "cluster-shared-nfs"  # FIXED: Use shared storage for cloud-init ISO
     dns {
       servers = ["1.1.1.1", "8.8.8.8"]
     }
-    # --- THIS IS THE CHANGE ---
-    # Revert to DHCP to make the template generic.
     ip_config {
       ipv4 {
         address = "dhcp"

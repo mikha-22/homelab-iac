@@ -1,5 +1,6 @@
 # ===================================================================
-#  PHASE 3: DEPLOY K3S CLUSTER FROM GOLDEN IMAGE
+#  PHASE 3: DEPLOY K3S CLUSTER FROM GOLDEN IMAGE - FINAL WORKING VERSION
+#  Uses separate resources instead of for_each to avoid provider issues
 # ===================================================================
 
 terraform {
@@ -22,26 +23,15 @@ provider "proxmox" {
   api_token = var.pm_api_token
 }
 
-# --- Define the VMs we want to create ---
-locals {
-  vms_to_create = {
-    "dev-k3s-master-01" = { node = "pve1", vmid = 801, ip = "192.168.1.81/24" },
-    "dev-k3s-worker-01" = { node = "pve2", vmid = 802, ip = "192.168.1.82/24" }
-  }
-}
-
-# --- Provision the VMs by cloning the golden template ---
-resource "proxmox_virtual_environment_vm" "web_servers" {
-  for_each = local.vms_to_create
-
-  name      = each.key
-  node_name = each.value.node
-  vm_id     = each.value.vmid
+# --- Master VM (separate resource) ---
+resource "proxmox_virtual_environment_vm" "master" {
+  name      = "dev-k3s-master-01"
+  node_name = "pve1"
+  vm_id     = 801
   tags      = ["k3s", "golden-image"]
 
-  # THE MAGIC: Clone the finished template. Fast, simple, reliable.
   clone {
-    vm_id = 9000 # The ID of the template Packer built for us.
+    vm_id = 9000
     full  = true 
   }
 
@@ -54,27 +44,73 @@ resource "proxmox_virtual_environment_vm" "web_servers" {
     model  = "virtio"
   }
 
-  # The golden image already has a disk, we're just resizing it.
-  disk {
-    datastore_id = "cluster-shared-nfs"
-    interface    = "scsi0"
-    size         = 20
-  }
-
-  # We only need cloud-init to set the unique IP address.
-  # All packages and software are already baked into the golden image.
   initialization {
     ip_config {
       ipv4 {
-        address = each.value.ip
+        address = "192.168.1.81/24"
         gateway = "192.168.1.1"
       }
     }
   }
 }
 
-# --- Output the IP addresses of the new VMs ---
+# --- Worker VM (separate resource) ---
+resource "proxmox_virtual_environment_vm" "worker" {
+  name      = "dev-k3s-worker-01"
+  node_name = "pve2"
+  vm_id     = 802
+  tags      = ["k3s", "golden-image"]
+
+  clone {
+    vm_id = 9010
+    full  = true 
+  }
+
+  cpu { cores = 6 }
+  memory { dedicated = 8192 }
+  agent { enabled = true }
+
+  network_device {
+    bridge = "vmbr0"
+    model  = "virtio"
+  }
+
+  initialization {
+    ip_config {
+      ipv4 {
+        address = "192.168.1.82/24"
+        gateway = "192.168.1.1"
+      }
+    }
+  }
+}
+
+# --- Outputs ---
 output "web_server_ips" {
   description = "The IP addresses of the created k3s servers."
-  value       = { for vm in proxmox_virtual_environment_vm.web_servers : vm.name => vm.initialization[0].ip_config[0].ipv4[0].address }
+  value = {
+    "dev-k3s-master-01" = proxmox_virtual_environment_vm.master.initialization[0].ip_config[0].ipv4[0].address
+    "dev-k3s-worker-01" = proxmox_virtual_environment_vm.worker.initialization[0].ip_config[0].ipv4[0].address
+  }
+}
+
+output "cluster_info" {
+  description = "K3s cluster information for next steps"
+  value = {
+    master = {
+      name = "dev-k3s-master-01"
+      ip   = "192.168.1.81"
+      node = "pve1"
+      vmid = 801
+    }
+    workers = [
+      {
+        name = "dev-k3s-worker-01"
+        ip   = "192.168.1.82"
+        node = "pve2"
+        vmid = 802
+      }
+    ]
+    ssh_command = "ssh ubuntu@192.168.1.81  # Connect to master node"
+  }
 }
