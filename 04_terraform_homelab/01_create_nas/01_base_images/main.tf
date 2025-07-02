@@ -33,5 +33,5 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_noble" {
   datastore_id = "local"
   node_name    = "pve1"
   url          = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
-  overwrite    = false
+  overwrite    = true
 }

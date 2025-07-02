@@ -6,5 +6,5 @@ repomix-output.xml
 .terraform/
 .*/
 *.*/
-.tfstate
-.tfstate.*
+terraform.tfstate
+terraform.tfstate.*

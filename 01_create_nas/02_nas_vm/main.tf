@@ -133,7 +133,7 @@ resource "proxmox_virtual_environment_vm" "nfs_server" {
 
 # --- REGISTER THE NFS STORAGE IN PROXMOX ---
 resource "null_resource" "register_nfs_storage" {
-  depends_on = [ proxmox_virtual_environment_vm.nfs_server ]
+  depends_on = [proxmox_virtual_environment_vm.nfs_server]
 
   triggers = {
     vm_id = proxmox_virtual_environment_vm.nfs_server.id
@@ -143,19 +143,25 @@ resource "null_resource" "register_nfs_storage" {
   # to install and start the NFS server. This avoids the race condition.
   # You may need to adjust this value depending on your hardware speed.
   provisioner "local-exec" {
-    command = "echo 'Waiting 60 seconds for VM to boot and NFS to start...' && sleep 20"
+    command = "echo 'Waiting 20 seconds for VM to boot and NFS to start...' && sleep 20"
   }
-  
+
   provisioner "local-exec" {
     command = <<-EOT
-      sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@pve1.local "pvesm add nfs cluster-shared-nfs --path /mnt/pve/cluster-shared-nfs --server 192.168.1.70 --export /export/proxmox-storage --content images,iso,vztmpl,snippets,backup,rootdir --nodes pve1"
+      for node in pve1.local pve2.local; do
+        sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$node" "mkdir -p /mnt/pve/cluster-shared-nfs"
+      done && \
+      sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@pve1.local "pvesm add nfs cluster-shared-nfs --path /mnt/pve/cluster-shared-nfs --server 192.168.1.70 --export /export/proxmox-storage --content images,iso,vztmpl,snippets,backup,rootdir --nodes pve1,pve2"
     EOT
   }
 
   provisioner "local-exec" {
     when    = destroy
     command = <<-EOT
-      sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@pve1.local "pvesm remove cluster-shared-nfs"
+      sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@pve1.local "if pvesm status | grep -q '^cluster-shared-nfs '; then pvesm remove cluster-shared-nfs; fi" && \
+      for node in pve1.local pve2.local; do
+        sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$node" "umount -l /mnt/pve/cluster-shared-nfs || true; rmdir /mnt/pve/cluster-shared-nfs || true"
+      done
     EOT
   }
 }
