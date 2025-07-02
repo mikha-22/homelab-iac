@@ -45,6 +45,12 @@ variable "new_template_name" {
   default = "ubuntu-2404-k3s-template"
 }
 
+variable "storage_pool" {
+  type    = string
+  default = "cluster-shared-nfs"
+  description = "Storage pool for cloud-init storage"
+}
+
 # --- Locals ---
 # Parse the Proxmox API token into its user/tokenid and secret parts
 locals {
@@ -95,7 +101,7 @@ source "proxmox-clone" "k3s_template" {
   
   # --- Cloud-init Configuration ---
   cloud_init              = true
-  cloud_init_storage_pool = "local-lvm"
+  cloud_init_storage_pool = var.storage_pool  # Use shared NFS storage for cloud-init
   
   # --- DNS Configuration ---
   nameserver = "1.1.1.1 8.8.8.8"
