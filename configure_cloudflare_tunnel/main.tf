@@ -31,7 +31,6 @@ provider "kubernetes" {
   config_path = "~/.kube/config"
 }
 
-# Corrected provider "helm" block
 provider "helm" {
   kubernetes = {
     config_path = "~/.kube/config"
@@ -67,16 +66,17 @@ variable "domain_name" {
   default     = "milenika.dev"
 }
 
+# --- CORRECTED VARIABLE NAME ---
 variable "traefik_service_name" {
   type        = string
   description = "Traefik service name"
-  default     = "traefik-proxy"
+  default     = "traefik"
 }
 
 variable "traefik_namespace" {
   type        = string
   description = "Traefik namespace"
-  default     = "traefik"
+  default     = "kube-system"
 }
 
 # 1. Generate tunnel secret
@@ -241,7 +241,7 @@ resource "kubernetes_deployment" "cloudflared" {
             "tunnel",
             "--no-autoupdate",
             "run",
-            "--token=$(TUNNEL_TOKEN)"
+            "--protocol", "http2"
           ]
 
           env {
@@ -270,7 +270,7 @@ resource "kubernetes_deployment" "cloudflared" {
               path = "/ready"
               port = 2000
             }
-            initial_delay_seconds = 10
+            initial_delay_seconds = 30
             period_seconds        = 30
           }
 
@@ -279,7 +279,7 @@ resource "kubernetes_deployment" "cloudflared" {
               path = "/ready"
               port = 2000
             }
-            initial_delay_seconds = 10
+            initial_delay_seconds = 30
             period_seconds        = 10
           }
         }
