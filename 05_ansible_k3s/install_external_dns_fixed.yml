@@ -33,6 +33,9 @@
             apiKey: "{{ cloudflare_api_token }}"
       delegate_to: localhost
       become: no
+      vars:
+        # Only set the Python interpreter for this specific task running on localhost
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
     - name: Add ExternalDNS Helm repo
       kubernetes.core.helm_repository:
         name: external-dns

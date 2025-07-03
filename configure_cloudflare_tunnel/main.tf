@@ -1,10 +1,8 @@
 # =================================================================
-#  Terraform Configuration for a Cloudflare Tunnel
-#  Manages the tunnel, its routing, and its DNS records.
-#  CORRECTED: Re-added random_password for the tunnel secret.
+#  COMPLETE CLOUDFLARE + KUBERNETES SETUP
+#  Manages tunnel, DNS, ExternalDNS, and cloudflared deployment
 # =================================================================
 
-# --- CONFIGURE PROVIDERS ---
 terraform {
   required_providers {
     cloudflare = {
@@ -15,6 +13,10 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = ">= 2.20.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
@@ -22,16 +24,21 @@ terraform {
   }
 }
 
-# Configure the Cloudflare Provider
-# The API token is automatically read from the CLOUDFLARE_API_TOKEN environment variable
+# Configure providers
 provider "cloudflare" {}
 
-# Configure the Kubernetes Provider
-# Assumes you have a working kubeconfig file on your machine
-provider "kubernetes" {}
+provider "kubernetes" {
+  config_path = "~/.kube/config"
+}
 
+# Corrected provider "helm" block
+provider "helm" {
+  kubernetes = {
+    config_path = "~/.kube/config"
+  }
+}
 
-# --- INPUT VARIABLES ---
+# Variables
 variable "cloudflare_account_id" {
   type        = string
   description = "Your Cloudflare Account ID."
@@ -42,82 +49,274 @@ variable "cloudflare_zone_id" {
   description = "The Zone ID for your domain (milenika.dev)."
 }
 
+variable "cloudflare_api_token_externaldns" {
+  type        = string
+  description = "Cloudflare API token for ExternalDNS"
+  sensitive   = true
+}
+
 variable "tunnel_name" {
   type        = string
   description = "A name for your Cloudflare Tunnel."
   default     = "homelab-k3s-tunnel"
 }
 
-variable "k8s_namespace" {
+variable "domain_name" {
   type        = string
-  description = "The Kubernetes namespace where your cloudflared deployment is running."
-  default     = "cloudflare"
+  description = "Your domain name"
+  default     = "milenika.dev"
 }
 
+variable "traefik_service_name" {
+  type        = string
+  description = "Traefik service name"
+  default     = "traefik-proxy"
+}
 
-# --- RESOURCE DEFINITIONS ---
+variable "traefik_namespace" {
+  type        = string
+  description = "Traefik namespace"
+  default     = "traefik"
+}
 
-# 1. Generate a secure secret for the tunnel (This was mistakenly removed)
+# 1. Generate tunnel secret
 resource "random_password" "tunnel_secret" {
   length  = 35
   special = false
 }
 
-# 2. Create the Cloudflare Tunnel itself
-# The 'secret' argument is required here.
-resource "cloudflare_tunnel" "k3s_tunnel" {
+# 2. Create Cloudflare Tunnel
+resource "cloudflare_zero_trust_tunnel_cloudflared" "k3s_tunnel" {
   account_id = var.cloudflare_account_id
   name       = var.tunnel_name
   secret     = base64encode(random_password.tunnel_secret.result)
+  config_src = "cloudflare"
 }
 
-# 3. Create the Kubernetes secret for the cloudflared pods to use
-# This secret contains the credentials.json file needed for authentication.
-resource "kubernetes_secret" "tunnel_credentials" {
-  metadata {
-    name      = "tunnel-credentials" # This name MUST match what your deployment expects
-    namespace = var.k8s_namespace
-  }
-
-  data = {
-    "credentials.json" = jsonencode({
-      "AccountId"    = var.cloudflare_account_id
-      "TunnelID"     = cloudflare_tunnel.k3s_tunnel.id
-      "TunnelName"   = cloudflare_tunnel.k3s_tunnel.name
-      # This must use the result from the 'random_password' resource
-      "TunnelSecret" = random_password.tunnel_secret.result
-    })
-  }
-}
-
-# 4. Configure the tunnel's ingress rules (traffic routing)
-resource "cloudflare_tunnel_config" "k3s_tunnel_config" {
+# 3. Configure tunnel routing
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = cloudflare_tunnel.k3s_tunnel.id
-
-  # depends_on is a good practice to ensure the Kubernetes
-  # secret is created before the tunnel config is finalized.
-  depends_on = [kubernetes_secret.tunnel_credentials]
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.id
 
   config {
+    # Route all subdomain traffic to Traefik
     ingress_rule {
-      hostname = "*.milenika.dev"
-      service  = "http://traefik-proxy.traefik.svc.cluster.local:80"
+      hostname = "*.${var.domain_name}"
+      service  = "http://${var.traefik_service_name}.${var.traefik_namespace}.svc.cluster.local:80"
     }
 
+    # Route root domain traffic to Traefik
+    ingress_rule {
+      hostname = var.domain_name
+      service  = "http://${var.traefik_service_name}.${var.traefik_namespace}.svc.cluster.local:80"
+    }
+
+    # Catch-all rule (required)
     ingress_rule {
       service = "http_status:404"
     }
   }
 }
 
-# 5. Create the public DNS CNAME record to point your domain to the tunnel
+# 4. Create DNS records
 resource "cloudflare_record" "wildcard_dns" {
   zone_id = var.cloudflare_zone_id
-  name    = "*.milenika.dev"
-  # Using 'content' instead of 'value' to fix the deprecation warning
-  content = cloudflare_tunnel.k3s_tunnel.cname
+  name    = "*"
+  content = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
   type    = "CNAME"
   proxied = true
-  comment = "Managed by Terraform: Points wildcard traffic to the k3s tunnel."
+  comment = "Managed by Terraform: Wildcard DNS for tunnel"
+}
+
+resource "cloudflare_record" "root_dns" {
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  content = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
+  type    = "CNAME"
+  proxied = true
+  comment = "Managed by Terraform: Root domain DNS for tunnel"
+}
+
+# 5. Create namespace for cloudflared
+resource "kubernetes_namespace" "cloudflared" {
+  metadata {
+    name = "cloudflared"
+  }
+}
+
+# 6. Create namespace for external-dns
+resource "kubernetes_namespace" "external_dns" {
+  metadata {
+    name = "external-dns"
+  }
+}
+
+# 7. Create ExternalDNS secret
+resource "kubernetes_secret" "cloudflare_api_token" {
+  metadata {
+    name      = "cloudflare-api-key"
+    namespace = kubernetes_namespace.external_dns.metadata[0].name
+  }
+
+  data = {
+    apiKey = var.cloudflare_api_token_externaldns
+  }
+}
+
+# 8. Deploy ExternalDNS
+resource "helm_release" "external_dns" {
+  name       = "external-dns"
+  repository = "https://kubernetes-sigs.github.io/external-dns/"
+  chart      = "external-dns"
+  namespace  = kubernetes_namespace.external_dns.metadata[0].name
+
+  values = [
+    yamlencode({
+      provider = "cloudflare"
+      env = [
+        {
+          name = "CF_API_TOKEN"
+          valueFrom = {
+            secretKeyRef = {
+              name = kubernetes_secret.cloudflare_api_token.metadata[0].name
+              key  = "apiKey"
+            }
+          }
+        }
+      ]
+      sources = ["ingress", "service"]
+      txtOwnerId = "homelab-k3s"
+      policy = "sync"
+      logLevel = "info"
+      interval = "1m"
+      txtPrefix = "externaldns-"
+      domainFilters = [var.domain_name]
+    })
+  ]
+
+  depends_on = [kubernetes_secret.cloudflare_api_token]
+}
+
+# 9. Create tunnel credentials secret for cloudflared
+resource "kubernetes_secret" "tunnel_credentials" {
+  metadata {
+    name      = "tunnel-token"
+    namespace = kubernetes_namespace.cloudflared.metadata[0].name
+  }
+
+  data = {
+    token = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.tunnel_token
+  }
+}
+
+# 10. Deploy cloudflared
+resource "kubernetes_deployment" "cloudflared" {
+  metadata {
+    name      = "cloudflared"
+    namespace = kubernetes_namespace.cloudflared.metadata[0].name
+  }
+
+  spec {
+    replicas = 2
+
+    selector {
+      match_labels = {
+        app = "cloudflared"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "cloudflared"
+        }
+      }
+
+      spec {
+        container {
+          name  = "cloudflared"
+          image = "cloudflare/cloudflared:latest"
+
+          args = [
+            "tunnel",
+            "--no-autoupdate",
+            "run",
+            "--token=$(TUNNEL_TOKEN)"
+          ]
+
+          env {
+            name = "TUNNEL_TOKEN"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.tunnel_credentials.metadata[0].name
+                key  = "token"
+              }
+            }
+          }
+
+          resources {
+            limits = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            requests = {
+              cpu    = "50m"
+              memory = "64Mi"
+            }
+          }
+
+          liveness_probe {
+            http_get {
+              path = "/ready"
+              port = 2000
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 30
+          }
+
+          readiness_probe {
+            http_get {
+              path = "/ready"
+              port = 2000
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 10
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    kubernetes_secret.tunnel_credentials,
+    cloudflare_zero_trust_tunnel_cloudflared_config.k3s_tunnel_config
+  ]
+}
+
+# Outputs
+output "tunnel_id" {
+  description = "The ID of the created tunnel"
+  value       = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.id
+}
+
+output "tunnel_cname" {
+  description = "The CNAME of the tunnel for DNS configuration"
+  value       = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
+}
+
+output "tunnel_token" {
+  description = "The tunnel token (sensitive)"
+  value       = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.tunnel_token
+  sensitive   = true
+}
+
+output "setup_complete" {
+  description = "Complete setup summary"
+  value = {
+    tunnel_created    = "✅ Tunnel: ${cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.name}"
+    dns_configured    = "✅ DNS: *.${var.domain_name} → ${cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname}"
+    external_dns      = "✅ ExternalDNS: Deployed in ${kubernetes_namespace.external_dns.metadata[0].name} namespace"
+    cloudflared       = "✅ Cloudflared: 2 replicas running in ${kubernetes_namespace.cloudflared.metadata[0].name} namespace"
+    next_steps        = "Deploy your apps with ingress annotations!"
+  }
 }

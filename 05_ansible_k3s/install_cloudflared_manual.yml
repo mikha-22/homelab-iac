@@ -1,5 +1,8 @@
 ---
 - hosts: server
+  vars:
+    # Force Ansible to use the virtual environment Python interpreter
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
   vars_prompt:
     - name: "cloudflare_tunnel_token"
       prompt: "Paste your Cloudflare Tunnel TOKEN here"
@@ -20,6 +23,9 @@
             token: "{{ cloudflare_tunnel_token }}"
       delegate_to: localhost
       become: no
+      vars:
+        # Ensure the delegated task also uses the correct Python interpreter
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
 
     - name: Deploy cloudflared using a manual manifest
       kubernetes.core.k8s:
@@ -59,3 +65,6 @@
                       - run
       delegate_to: localhost
       become: no
+      vars:
+        # Ensure the delegated task also uses the correct Python interpreter
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"

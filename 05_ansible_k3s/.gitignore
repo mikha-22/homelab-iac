@@ -1,1 +1,10 @@
-ansible-venv/
+.git
+./git/
+git/
+repomix-output.xml
+/temp
+.terraform/
+.*/
+*.*/
+.tfstate
+.tfstate.*

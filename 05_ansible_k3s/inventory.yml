@@ -4,20 +4,22 @@ k3s_cluster:
     server:
       hosts:
         192.168.1.81:
+          ansible_user: ubuntu
+          # Set the K3s node name to match the hostname
+          k3s_node_name: dev-k3s-master-01
     agent:
       hosts:
         192.168.1.82:
+          ansible_user: ubuntu
+          # Set the K3s node name to match the hostname
+          k3s_node_name: dev-k3s-worker-01
 
   vars:
-    # This is the user for SSH access
-    ansible_user: mikha
-    
     # Define the version of K3s to install
     k3s_version: "v1.29.5+k3s1"
 
     # Define the API endpoint for the cluster
-    # This should be the IP of your primary server node
-    api_endpoint: "192.168.1.81"  # <--- ADD THIS LINE
+    api_endpoint: "192.168.1.81"
 
-    # This is the k3s cluster secret token
-    k3s_token: "a-very-secret-token"
+    # Use a simple token that Ansible can manage
+    k3s_token: "my-secure-k3s-token"

@@ -8,7 +8,6 @@ packer {
 }
 
 # --- Variables ---
-# These are loaded automatically from .pkrvars.hcl and .auto.pkrvars.hcl files
 variable "pm_api_token" {
   type      = string
   sensitive = true
@@ -42,7 +41,7 @@ variable "new_template_id" {
 
 variable "new_template_name" {
   type    = string
-  default = "ubuntu-2404-k3s-template"
+  default = "ubuntu-2404-clean-template"
 }
 
 variable "storage_pool" {
@@ -52,14 +51,12 @@ variable "storage_pool" {
 }
 
 # --- Locals ---
-# Parse the Proxmox API token into its user/tokenid and secret parts
 locals {
   proxmox_auth = split("=", var.pm_api_token)
 }
 
 # --- Builder ---
-# Clones the base VM, provisions it, and creates a new template
-source "proxmox-clone" "k3s_template" {
+source "proxmox-clone" "clean_template" {
   # --- Proxmox Connection ---
   proxmox_url              = var.proxmox_url
   insecure_skip_tls_verify = true
@@ -70,7 +67,7 @@ source "proxmox-clone" "k3s_template" {
   node     = var.base_template_node
   clone_vm = var.base_template_name
 
-  # --- CRITICAL FIX: Use full clone for local-lvm storage ---
+  # --- Use full clone for local-lvm storage ---
   full_clone = true
 
   # --- Communicator ---
@@ -83,13 +80,13 @@ source "proxmox-clone" "k3s_template" {
   # --- New Template ---
   vm_id                = var.new_template_id
   template_name        = var.new_template_name
-  template_description = "Golden Image: Ubuntu 24.04 with k3s pre-installed."
+  template_description = "Clean Ubuntu 24.04 template for K3s deployment via Ansible."
   
   # --- Hardware Configuration ---
   cores  = 2
   memory = 4096
   
-  # --- CRITICAL: Match the template's SCSI controller ---
+  # --- Match the template's SCSI controller ---
   scsi_controller = "virtio-scsi-pci"
   
   # --- Network Configuration ---
@@ -101,7 +98,7 @@ source "proxmox-clone" "k3s_template" {
   
   # --- Cloud-init Configuration ---
   cloud_init              = true
-  cloud_init_storage_pool = var.storage_pool  # Use shared NFS storage for cloud-init
+  cloud_init_storage_pool = var.storage_pool
   
   # --- DNS Configuration ---
   nameserver = "1.1.1.1 8.8.8.8"
@@ -111,9 +108,8 @@ source "proxmox-clone" "k3s_template" {
 }
 
 # --- Build ---
-# Defines the steps to provision the VM
 build {
-  sources = ["source.proxmox-clone.k3s_template"]
+  sources = ["source.proxmox-clone.clean_template"]
 
   # Step 1: Wait for cloud-init and update the OS
   provisioner "shell" {
@@ -127,12 +123,12 @@ build {
     ]
   }
 
-  # Step 2: Install k3s
+  # Step 2: Install common packages that K3s will need
   provisioner "shell" {
     inline = [
-      "echo 'Installing k3s...'",
-      "curl -sfL https://get.k3s.io | sh -s -",
-      "echo 'k3s installation complete.'"
+      "echo 'Installing common packages for K3s...'",
+      "sudo apt-get install -y curl wget apt-transport-https ca-certificates software-properties-common",
+      "echo 'Common packages installed.'"
     ]
   }
   
@@ -140,14 +136,19 @@ build {
   provisioner "shell" {
     inline = [
       "echo 'Cleaning up image for templating...'",
-      "sudo systemctl stop k3s",
-      "sudo systemctl disable k3s",
-      "sudo rm -f /var/lib/rancher/k3s/server/token",
-      "sudo rm -rf /var/lib/rancher/k3s/server/db/etcd/member/wal/* || true",
+      # Clean SSH host keys so each VM gets unique ones
       "sudo rm -f /etc/ssh/ssh_host_*",
+      # Clean cloud-init state
       "sudo cloud-init clean -s -l",
+      # Clean bash history
       "history -c || true",
-      "cat /dev/null > ~/.bash_history"
+      "cat /dev/null > ~/.bash_history",
+      # Clean package cache
+      "sudo apt-get clean",
+      # Clean logs
+      "sudo truncate -s 0 /var/log/*log",
+      "echo 'Image cleanup complete - ready for K3s deployment via Ansible.'",
+      "sudo systemctl enable ssh"
     ]
     expect_disconnect = true
   }
