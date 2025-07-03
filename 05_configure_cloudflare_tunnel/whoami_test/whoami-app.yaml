@@ -26,22 +26,13 @@ spec:
 
 ---
 
-# 2. The Service, with the CORRECT type and annotations
+# 2. The Service (simple ClusterIP, unchanged)
 apiVersion: v1
 kind: Service
 metadata:
   name: whoami
   namespace: default
-  annotations:
-    # Tell ExternalDNS the hostname to create.
-    external-dns.alpha.kubernetes.io/hostname: "whoami.milenika.dev"
-    # Force ExternalDNS to create a CNAME record pointing to our tunnel.
-    # This now works because there is no LoadBalancer IP to override it.
-    external-dns.alpha.kubernetes.io/target: "7db2c74d-3a56-4085-8f84-cdb9efb8f17e.cfargotunnel.com"
 spec:
-  # --- THE CRITICAL CHANGE ---
-  # This service only needs to be reachable inside the cluster by Traefik.
-  # ClusterIP is the correct type and avoids publishing node IPs.
   type: ClusterIP
   selector:
     app: whoami
@@ -52,18 +43,28 @@ spec:
 
 ---
 
-# 3. The IngressRoute, for Traefik's internal routing (unchanged)
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
+# 3. Standard Kubernetes Ingress with the FINAL annotations
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: whoami-ingress
   namespace: default
+  annotations:
+    # This tells ExternalDNS to point the CNAME record to our tunnel
+    external-dns.alpha.kubernetes.io/target: "eabb0009-38d6-4998-b247-b687c6a59fae.cfargotunnel.com"
+
+    # --- THIS IS THE FINAL, CRITICAL FIX ---
+    # This tells ExternalDNS to enable the Cloudflare proxy (orange cloud).
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`whoami.milenika.dev`)
-      kind: Rule
-      services:
-        - name: whoami
-          port: 80
+  rules:
+  - host: whoami.milenika.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: whoami
+            port:
+              number: 80
