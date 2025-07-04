@@ -8,3 +8,5 @@ repomix-output.xml
 *.*/
 .tfstate
 .tfstate.*
+07_gitops_manifests/
+06_argocd_install/
