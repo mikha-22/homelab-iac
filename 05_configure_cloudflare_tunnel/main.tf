@@ -116,17 +116,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
   }
 }
 
-# 4. Create DNS record for the ROOT domain only
-# The wildcard DNS record is gone, as ExternalDNS now handles app DNS.
-resource "cloudflare_record" "root_dns" {
-  zone_id = var.cloudflare_zone_id
-  name    = "@"
-  content = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
-  type    = "CNAME"
-  proxied = true
-  comment = "Managed by Terraform: Root domain DNS for tunnel"
-}
-
 # 5. Create namespace for cloudflared
 resource "kubernetes_namespace" "cloudflared" {
   metadata {

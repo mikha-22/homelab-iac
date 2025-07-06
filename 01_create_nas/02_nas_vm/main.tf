@@ -86,7 +86,7 @@ resource "proxmox_virtual_environment_vm" "nfs_server" {
   description = "NFS server for Proxmox cluster shared storage"
   tags        = ["nas", "nfs", "infra"]
   node_name   = "pve1"
-  vm_id       = 700
+  vm_id       = 225
 
   depends_on = [
     proxmox_virtual_environment_file.nas_cloud_init
@@ -124,7 +124,7 @@ resource "proxmox_virtual_environment_vm" "nfs_server" {
     dns { servers = ["1.1.1.1", "8.8.8.8"] }
     ip_config {
       ipv4 {
-        address = "192.168.1.70/24"
+        address = "192.168.1.225/24"
         gateway = "192.168.1.1"
       }
     }
@@ -151,7 +151,7 @@ resource "null_resource" "register_nfs_storage" {
       for node in pve1.local pve2.local; do
         sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$node" "mkdir -p /mnt/pve/cluster-shared-nfs"
       done && \
-      sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@pve1.local "pvesm add nfs cluster-shared-nfs --path /mnt/pve/cluster-shared-nfs --server 192.168.1.70 --export /export/proxmox-storage --content images,iso,vztmpl,snippets,backup,rootdir --nodes pve1,pve2"
+      sshpass -p "$TF_VAR_pm_ssh_password" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@pve1.local "pvesm add nfs cluster-shared-nfs --path /mnt/pve/cluster-shared-nfs --server 192.168.1.225 --export /export/proxmox-storage --content images,iso,vztmpl,snippets,backup,rootdir --nodes pve1,pve2"
     EOT
   }
 

@@ -90,7 +90,7 @@ resource "proxmox_virtual_environment_file" "worker_cloud_init" {
 resource "proxmox_virtual_environment_vm" "master" {
   name      = "dev-k3s-master-01"
   node_name = "pve1"
-  vm_id     = 801
+  vm_id     = 181
   tags      = ["k3s", "golden-image"]
 
   depends_on = [proxmox_virtual_environment_file.master_cloud_init]
@@ -113,7 +113,7 @@ resource "proxmox_virtual_environment_vm" "master" {
     user_data_file_id = proxmox_virtual_environment_file.master_cloud_init.id
     ip_config {
       ipv4 {
-        address = "192.168.1.81/24"
+        address = "192.168.1.181/24"
         gateway = "192.168.1.1"
       }
     }
@@ -124,7 +124,7 @@ resource "proxmox_virtual_environment_vm" "master" {
 resource "proxmox_virtual_environment_vm" "worker" {
   name      = "dev-k3s-worker-01"
   node_name = "pve2"
-  vm_id     = 802
+  vm_id     = 182
   tags      = ["k3s", "golden-image"]
 
   depends_on = [proxmox_virtual_environment_file.worker_cloud_init]
@@ -147,7 +147,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
     user_data_file_id = proxmox_virtual_environment_file.worker_cloud_init.id
     ip_config {
       ipv4 {
-        address = "192.168.1.82/24"
+        address = "192.168.1.182/24"
         gateway = "192.168.1.1"
       }
     }
@@ -169,19 +169,19 @@ output "cluster_info" {
     master = {
       name     = "dev-k3s-master-01"
       hostname = "dev-k3s-master-01"
-      ip       = "192.168.1.81"
+      ip       = "192.168.1.181"
       node     = "pve1"
-      vmid     = 801
+      vmid     = 181
     }
     workers = [
       {
         name     = "dev-k3s-worker-01"
         hostname = "dev-k3s-worker-01"
-        ip       = "192.168.1.82"
+        ip       = "192.168.1.182"
         node     = "pve2"
-        vmid     = 802
+        vmid     = 182
       }
     ]
-    ssh_command = "ssh ubuntu@192.168.1.81  # Connect to master node"
+    ssh_command = "ssh ubuntu@192.168.1.181  # Connect to master node"
   }
 }
