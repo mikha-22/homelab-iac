@@ -1,7 +1,7 @@
 {
   "version": 4,
   "terraform_version": "1.12.2",
-  "serial": 85,
+  "serial": 71,
   "lineage": "b890f0ed-bc1a-2e8a-514f-4ec7a5c48ebc",
   "outputs": {
     "setup_complete": {
@@ -22,108 +22,20 @@
       ]
     },
     "tunnel_cname": {
-      "value": "e36ab9bf-8074-4886-ad3a-5b1cf5dce20a.cfargotunnel.com",
+      "value": "f292abbd-ec9f-49a8-a453-e016768bea56.cfargotunnel.com",
       "type": "string"
     },
     "tunnel_id": {
-      "value": "e36ab9bf-8074-4886-ad3a-5b1cf5dce20a",
+      "value": "f292abbd-ec9f-49a8-a453-e016768bea56",
       "type": "string"
     },
     "tunnel_token": {
-      "value": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZTM2YWI5YmYtODA3NC00ODg2LWFkM2EtNWIxY2Y1ZGNlMjBhIiwicyI6IlQwSnpRMGhHUlVJMU1GWnFjR2RZWVVOSFNrSTJabU5UT0RGRmFrSlJibFJWZW1zPSJ9",
+      "value": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZjI5MmFiYmQtZWM5Zi00OWE4LWE0NTMtZTAxNjc2OGJlYTU2IiwicyI6IlRsSm1RV3g1ZVdaclFtbE1ZVGxhYzBKSVVUWlJTMmwwWVZGc1JISnZaRzlZVjJ3PSJ9",
       "type": "string",
       "sensitive": true
     }
   },
   "resources": [
-    {
-      "mode": "managed",
-      "type": "cloudflare_zero_trust_tunnel_cloudflared",
-      "name": "k3s_tunnel",
-      "provider": "provider[\"registry.terraform.io/cloudflare/cloudflare\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "account_id": "590c0c0cf8f069d510a0b3712e2c301c",
-            "cname": "e36ab9bf-8074-4886-ad3a-5b1cf5dce20a.cfargotunnel.com",
-            "config_src": "cloudflare",
-            "id": "e36ab9bf-8074-4886-ad3a-5b1cf5dce20a",
-            "name": "homelab-k3s-tunnel",
-            "secret": "T0JzQ0hGRUI1MFZqcGdYYUNHSkI2ZmNTODFFakJRblRVems=",
-            "tunnel_token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZTM2YWI5YmYtODA3NC00ODg2LWFkM2EtNWIxY2Y1ZGNlMjBhIiwicyI6IlQwSnpRMGhHUlVJMU1GWnFjR2RZWVVOSFNrSTJabU5UT0RGRmFrSlJibFJWZW1zPSJ9"
-          },
-          "sensitive_attributes": [
-            [
-              {
-                "type": "get_attr",
-                "value": "secret"
-              }
-            ],
-            [
-              {
-                "type": "get_attr",
-                "value": "tunnel_token"
-              }
-            ]
-          ],
-          "identity_schema_version": 0,
-          "private": "bnVsbA==",
-          "dependencies": [
-            "random_password.tunnel_secret"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "cloudflare_zero_trust_tunnel_cloudflared_config",
-      "name": "k3s_tunnel_config",
-      "provider": "provider[\"registry.terraform.io/cloudflare/cloudflare\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "account_id": "590c0c0cf8f069d510a0b3712e2c301c",
-            "config": [
-              {
-                "ingress_rule": [
-                  {
-                    "hostname": "*.milenika.dev",
-                    "origin_request": [],
-                    "path": "",
-                    "service": "http://traefik.kube-system.svc.cluster.local:80"
-                  },
-                  {
-                    "hostname": "milenika.dev",
-                    "origin_request": [],
-                    "path": "",
-                    "service": "http://traefik.kube-system.svc.cluster.local:80"
-                  },
-                  {
-                    "hostname": "",
-                    "origin_request": [],
-                    "path": "",
-                    "service": "http_status:404"
-                  }
-                ],
-                "origin_request": [],
-                "warp_routing": []
-              }
-            ],
-            "id": "e36ab9bf-8074-4886-ad3a-5b1cf5dce20a",
-            "tunnel_id": "e36ab9bf-8074-4886-ad3a-5b1cf5dce20a"
-          },
-          "sensitive_attributes": [],
-          "identity_schema_version": 0,
-          "private": "bnVsbA==",
-          "dependencies": [
-            "cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel",
-            "random_password.tunnel_secret"
-          ]
-        }
-      ]
-    },
     {
       "mode": "managed",
       "type": "helm_release",
@@ -152,8 +64,8 @@
             "metadata": {
               "app_version": "0.17.0",
               "chart": "external-dns",
-              "first_deployed": 1751796909,
-              "last_deployed": 1751796909,
+              "first_deployed": 1751790950,
+              "last_deployed": 1751790950,
               "name": "external-dns",
               "namespace": "external-dns",
               "notes": "***********************************************************************\n* External DNS                                                        *\n***********************************************************************\n  Chart version: 1.17.0\n  App version:   0.17.0\n  Image tag:     registry.k8s.io/external-dns/external-dns:v0.17.0\n***********************************************************************\n🚧 DEPRECATIONS 🚧\n\nThe following features, functions, or methods are deprecated and no longer recommended for use.\n\n❗❗❗ DEPRECATED ❗❗❗ The legacy 'provider: \u003cname\u003e' configuration is in use. Support will be removed in future releases.\n",
@@ -230,8 +142,8 @@
                 "labels": null,
                 "name": "cloudflared",
                 "namespace": "cloudflared",
-                "resource_version": "911",
-                "uid": "0fe67387-aa0e-4936-8a92-c208708ff46c"
+                "resource_version": "1484",
+                "uid": "e4528aaa-d63e-4d0c-9d54-3fcf8a484fb4"
               }
             ],
             "spec": [
@@ -433,13 +345,13 @@
             "id": "cloudflared",
             "metadata": [
               {
-                "annotations": {},
+                "annotations": null,
                 "generate_name": "",
                 "generation": 0,
-                "labels": {},
+                "labels": null,
                 "name": "cloudflared",
-                "resource_version": "782",
-                "uid": "672fae87-c938-4311-8b63-1b5c27687302"
+                "resource_version": "1400",
+                "uid": "75081edb-a3c2-48f7-bbbb-aa3669771385"
               }
             ],
             "timeouts": null,
@@ -463,13 +375,13 @@
             "id": "external-dns",
             "metadata": [
               {
-                "annotations": {},
+                "annotations": null,
                 "generate_name": "",
                 "generation": 0,
-                "labels": {},
+                "labels": null,
                 "name": "external-dns",
-                "resource_version": "783",
-                "uid": "8956fac8-4463-4b2b-93d3-7b4c125e3021"
+                "resource_version": "1399",
+                "uid": "244e79fa-4bcb-4af2-b1a2-177a99e75b27"
               }
             ],
             "timeouts": null,
@@ -502,14 +414,14 @@
             "immutable": false,
             "metadata": [
               {
-                "annotations": {},
+                "annotations": null,
                 "generate_name": "",
                 "generation": 0,
-                "labels": {},
+                "labels": null,
                 "name": "cloudflare-api-key",
                 "namespace": "external-dns",
-                "resource_version": "788",
-                "uid": "44c96e7f-5b6f-4df4-a111-ef4d12355161"
+                "resource_version": "1405",
+                "uid": "f5f04935-705b-4cdd-9508-a44291be0d4f"
               }
             ],
             "timeouts": null,
@@ -564,7 +476,7 @@
             "binary_data_wo": null,
             "binary_data_wo_revision": null,
             "data": {
-              "token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZTM2YWI5YmYtODA3NC00ODg2LWFkM2EtNWIxY2Y1ZGNlMjBhIiwicyI6IlQwSnpRMGhHUlVJMU1GWnFjR2RZWVVOSFNrSTJabU5UT0RGRmFrSlJibFJWZW1zPSJ9"
+              "token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZjI5MmFiYmQtZWM5Zi00OWE4LWE0NTMtZTAxNjc2OGJlYTU2IiwicyI6IlRsSm1RV3g1ZVdaclFtbE1ZVGxhYzBKSVVUWlJTMmwwWVZGc1JISnZaRzlZVjJ3PSJ9"
             },
             "data_wo": null,
             "data_wo_revision": null,
@@ -578,8 +490,8 @@
                 "labels": null,
                 "name": "tunnel-token",
                 "namespace": "cloudflared",
-                "resource_version": "859",
-                "uid": "bedfdbb4-dd45-4c1b-a502-ee5c99c54054"
+                "resource_version": "1408",
+                "uid": "62e55c31-7f08-4b6b-bc17-b51015eab60d"
               }
             ],
             "timeouts": null,
@@ -620,49 +532,6 @@
             "kubernetes_namespace.cloudflared",
             "random_password.tunnel_secret"
           ]
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "random_password",
-      "name": "tunnel_secret",
-      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
-      "instances": [
-        {
-          "schema_version": 3,
-          "attributes": {
-            "bcrypt_hash": "$2a$10$2w4W6qB4JuDS7PV1fiLaYenhK16mJN.6unARaFFwqPcJs.TQiTM1G",
-            "id": "none",
-            "keepers": null,
-            "length": 35,
-            "lower": true,
-            "min_lower": 0,
-            "min_numeric": 0,
-            "min_special": 0,
-            "min_upper": 0,
-            "number": true,
-            "numeric": true,
-            "override_special": null,
-            "result": "OBsCHFEB50VjpgXaCGJB6fcS81EjBQnTUzk",
-            "special": false,
-            "upper": true
-          },
-          "sensitive_attributes": [
-            [
-              {
-                "type": "get_attr",
-                "value": "bcrypt_hash"
-              }
-            ],
-            [
-              {
-                "type": "get_attr",
-                "value": "result"
-              }
-            ]
-          ],
-          "identity_schema_version": 0
         }
       ]
     }
