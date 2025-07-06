@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: homelab-apps
+  namespace: argocd
+spec:
+  generators:
+    # Generator 1: Manages cluster-wide configurations (e.g., Namespaces)
+    # It scans the cluster/overlays/ directory and creates an app for each folder it finds.
+    - git:
+        repoURL: https://github.com/mikha-22/homelab-gitops
+        revision: HEAD
+        directories:
+          - path: cluster/overlays/*
+  template:
+    metadata:
+      name: 'cluster-{{path.basename}}' # App name will be cluster-homelab
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/mikha-22/homelab-gitops
+        targetRevision: HEAD
+        path: '{{path}}' # Source path will be cluster/overlays/homelab
+      destination:
+        server: https://kubernetes.default.svc
+        # The resources will be created in the namespace defined in the YAML files themselves.
+        # For a Namespace resource, it's a cluster-level object.
+        namespace: '{{path.basename}}' 
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+        syncOptions: [CreateNamespace=true]
+
+  # Generator 2: Manages all deployable applications
+  # It scans the apps/ directory (excluding itself) and creates an app for each folder.
+  - git:
+      repoURL: https://github.com/mikha-22/homelab-gitops
+      revision: HEAD
+      directories:
+        - path: apps/*
+        - exclude: true
+          path: apps/argocd # This prevents a recursive loop!
+  template:
+    metadata:
+      name: '{{path.basename}}' # App name will be 'monitoring'
+    spec:
+      project: '{{path.basename}}' # Will use the 'monitoring' AppProject
+      source:
+        repoURL: https://github.com/mikha-22/homelab-gitops
+        targetRevision: HEAD
+        path: '{{path}}/homelab' # Crucial: Points to the overlay for environment-specific values
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}' # Destination namespace will be 'monitoring'
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+        syncOptions: [CreateNamespace=true]

@@ -1,0 +1,12 @@
+.git
+./git/
+git/
+repomix-output.xml
+/temp
+.terraform/
+.*/
+*.*/
+.tfstate
+.tfstate.*
+07_gitops_manifests/
+06_argocd_install/
