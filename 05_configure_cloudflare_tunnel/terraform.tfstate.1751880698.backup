@@ -1,7 +1,7 @@
 {
   "version": 4,
   "terraform_version": "1.12.2",
-  "serial": 132,
+  "serial": 105,
   "lineage": "b890f0ed-bc1a-2e8a-514f-4ec7a5c48ebc",
   "outputs": {
     "setup_complete": {
@@ -22,15 +22,15 @@
       ]
     },
     "tunnel_cname": {
-      "value": "ac517172-480a-4780-8116-44deff8af5c1.cfargotunnel.com",
+      "value": "e3eb2656-ba08-487e-86df-5788a51be54d.cfargotunnel.com",
       "type": "string"
     },
     "tunnel_id": {
-      "value": "ac517172-480a-4780-8116-44deff8af5c1",
+      "value": "e3eb2656-ba08-487e-86df-5788a51be54d",
       "type": "string"
     },
     "tunnel_token": {
-      "value": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiYWM1MTcxNzItNDgwYS00NzgwLTgxMTYtNDRkZWZmOGFmNWMxIiwicyI6Ik56ZFBXbVJhVW5nNFZqUkllR2swUVU5M1pFWnllVWMyTVdWR1VsbDFiMk5vT0dFPSJ9",
+      "value": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZTNlYjI2NTYtYmEwOC00ODdlLTg2ZGYtNTc4OGE1MWJlNTRkIiwicyI6IlRWRlRXV3RVTUdKa04yOXhZWE13U0ZKUlVERmFVbUZHVlRNeVZIQnRibkY1ZFZJPSJ9",
       "type": "string",
       "sensitive": true
     }
@@ -46,12 +46,12 @@
           "schema_version": 0,
           "attributes": {
             "account_id": "590c0c0cf8f069d510a0b3712e2c301c",
-            "cname": "ac517172-480a-4780-8116-44deff8af5c1.cfargotunnel.com",
+            "cname": "e3eb2656-ba08-487e-86df-5788a51be54d.cfargotunnel.com",
             "config_src": "cloudflare",
-            "id": "ac517172-480a-4780-8116-44deff8af5c1",
+            "id": "e3eb2656-ba08-487e-86df-5788a51be54d",
             "name": "homelab-k3s-tunnel",
-            "secret": "NzdPWmRaUng4VjRIeGk0QU93ZEZyeUc2MWVGUll1b2NoOGE=",
-            "tunnel_token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiYWM1MTcxNzItNDgwYS00NzgwLTgxMTYtNDRkZWZmOGFmNWMxIiwicyI6Ik56ZFBXbVJhVW5nNFZqUkllR2swUVU5M1pFWnllVWMyTVdWR1VsbDFiMk5vT0dFPSJ9"
+            "secret": "TVFTWWtUMGJkN29xYXMwSFJRUDFaUmFGVTMyVHBtbnF5dVI=",
+            "tunnel_token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZTNlYjI2NTYtYmEwOC00ODdlLTg2ZGYtNTc4OGE1MWJlNTRkIiwicyI6IlRWRlRXV3RVTUdKa04yOXhZWE13U0ZKUlVERmFVbUZHVlRNeVZIQnRibkY1ZFZJPSJ9"
           },
           "sensitive_attributes": [
             [
@@ -111,8 +111,8 @@
                 "warp_routing": []
               }
             ],
-            "id": "ac517172-480a-4780-8116-44deff8af5c1",
-            "tunnel_id": "ac517172-480a-4780-8116-44deff8af5c1"
+            "id": "e3eb2656-ba08-487e-86df-5788a51be54d",
+            "tunnel_id": "e3eb2656-ba08-487e-86df-5788a51be54d"
           },
           "sensitive_attributes": [],
           "identity_schema_version": 0,
@@ -152,8 +152,8 @@
             "metadata": {
               "app_version": "0.17.0",
               "chart": "external-dns",
-              "first_deployed": 1751881207,
-              "last_deployed": 1751881207,
+              "first_deployed": 1751855151,
+              "last_deployed": 1751855151,
               "name": "external-dns",
               "namespace": "external-dns",
               "notes": "***********************************************************************\n* External DNS                                                        *\n***********************************************************************\n  Chart version: 1.17.0\n  App version:   0.17.0\n  Image tag:     registry.k8s.io/external-dns/external-dns:v0.17.0\n***********************************************************************\n🚧 DEPRECATIONS 🚧\n\nThe following features, functions, or methods are deprecated and no longer recommended for use.\n\n❗❗❗ DEPRECATED ❗❗❗ The legacy 'provider: \u003cname\u003e' configuration is in use. Support will be removed in future releases.\n",
@@ -230,8 +230,8 @@
                 "labels": null,
                 "name": "cloudflared",
                 "namespace": "cloudflared",
-                "resource_version": "897",
-                "uid": "61c77640-5e44-4495-9676-33e6cde14c47"
+                "resource_version": "28859",
+                "uid": "96243920-61ba-4fd9-9505-3a5e38b3d38c"
               }
             ],
             "spec": [
@@ -438,8 +438,8 @@
                 "generation": 0,
                 "labels": null,
                 "name": "cloudflared",
-                "resource_version": "786",
-                "uid": "8f218876-9d47-45e9-86ea-0414b575d5d5"
+                "resource_version": "28775",
+                "uid": "0ff1b7db-8d96-4f84-9439-e32c3a1813c8"
               }
             ],
             "timeouts": null,
@@ -468,8 +468,8 @@
                 "generation": 0,
                 "labels": null,
                 "name": "external-dns",
-                "resource_version": "785",
-                "uid": "2df0d4df-1b4a-4cfe-9272-22921772ee13"
+                "resource_version": "28776",
+                "uid": "348ac06a-a654-4569-9c4f-a9dcb31d77ed"
               }
             ],
             "timeouts": null,
@@ -508,8 +508,8 @@
                 "labels": null,
                 "name": "cloudflare-api-key",
                 "namespace": "external-dns",
-                "resource_version": "791",
-                "uid": "d260b327-df30-422c-8e59-540d5f97cf30"
+                "resource_version": "28781",
+                "uid": "8490447a-756d-47c6-ae9f-b18d5f6ed97c"
               }
             ],
             "timeouts": null,
@@ -564,7 +564,7 @@
             "binary_data_wo": null,
             "binary_data_wo_revision": null,
             "data": {
-              "token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiYWM1MTcxNzItNDgwYS00NzgwLTgxMTYtNDRkZWZmOGFmNWMxIiwicyI6Ik56ZFBXbVJhVW5nNFZqUkllR2swUVU5M1pFWnllVWMyTVdWR1VsbDFiMk5vT0dFPSJ9"
+              "token": "eyJhIjoiNTkwYzBjMGNmOGYwNjlkNTEwYTBiMzcxMmUyYzMwMWMiLCJ0IjoiZTNlYjI2NTYtYmEwOC00ODdlLTg2ZGYtNTc4OGE1MWJlNTRkIiwicyI6IlRWRlRXV3RVTUdKa04yOXhZWE13U0ZKUlVERmFVbUZHVlRNeVZIQnRibkY1ZFZJPSJ9"
             },
             "data_wo": null,
             "data_wo_revision": null,
@@ -578,8 +578,8 @@
                 "labels": null,
                 "name": "tunnel-token",
                 "namespace": "cloudflared",
-                "resource_version": "794",
-                "uid": "d3d310db-5ffb-470d-8fda-ca3004defabb"
+                "resource_version": "28784",
+                "uid": "5575438c-13ce-4775-9df2-4b958e3ff823"
               }
             ],
             "timeouts": null,
@@ -632,7 +632,7 @@
         {
           "schema_version": 3,
           "attributes": {
-            "bcrypt_hash": "$2a$10$YRPP4bQutGnbFezW5bIsSOL69jVRyh9oznk4ZKuOhNxoKrxVK2yGe",
+            "bcrypt_hash": "$2a$10$9wW0705d6KQ1b7JPDgIXhOpKLQ7M1Si2.dUcXjSCbQJCizMXy9S5a",
             "id": "none",
             "keepers": null,
             "length": 35,
@@ -644,7 +644,7 @@
             "number": true,
             "numeric": true,
             "override_special": null,
-            "result": "77OZdZRx8V4Hxi4AOwdFryG61eFRYuoch8a",
+            "result": "MQSYkT0bd7oqas0HRQP1ZRaFU32TpmnqyuR",
             "special": false,
             "upper": true
           },

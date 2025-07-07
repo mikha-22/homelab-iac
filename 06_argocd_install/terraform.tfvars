@@ -6,7 +6,7 @@ chart_version      = "8.1.2"
 redis_ha_enabled   = true
 
 # Your Cloudflare tunnel CNAME (from your existing setup)
-tunnel_cname = "e3eb2656-ba08-487e-86df-5788a51be54d.cfargotunnel.com"
+tunnel_cname = "ac517172-480a-4780-8116-44deff8af5c1.cfargotunnel.com"
 
 # Optional: Set admin password (bcrypt hashed)
 # Generate with: htpasswd -nbBC 10 "" 'your-password' | tr -d ':\n' | sed 's/^[^$]*//'
