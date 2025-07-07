@@ -20,7 +20,7 @@ output "port_forward_command" {
 
 output "cli_login_command" {
   description = "ArgoCD CLI login command"
-  value       = "argocd login ${var.argocd_hostname} --username admin --grpc-web"
+  value       = "argocd login ${var.argocd_hostname} --username admin"
 }
 
 output "deployment_status" {

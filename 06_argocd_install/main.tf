@@ -9,32 +9,6 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
-# ConfigMap for insecure server configuration (Cloudflare compatibility)
-resource "kubernetes_config_map" "argocd_cmd_params" {
-  metadata {
-    name      = "argocd-cmd-params-cm"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
-    labels = {
-      "app.kubernetes.io/name"    = "argocd-cmd-params-cm"
-      "app.kubernetes.io/part-of" = "argocd"
-    }
-  }
-
-  data = {
-    # Enable insecure mode for Cloudflare TLS termination
-    "server.insecure" = "true"
-    
-    # Additional recommended settings
-    "server.disable.auth"                = "false"
-    "server.enable.proxy.extension"      = "true"
-    "application.instanceLabelKey"       = "argocd.argoproj.io/instance"
-    "server.rootpath"                    = "/"
-    "server.log.level"                   = "info"
-  }
-
-  depends_on = [kubernetes_namespace.argocd]
-}
-
 # ArgoCD Helm release
 resource "helm_release" "argocd" {
   name       = "argocd"
@@ -48,19 +22,7 @@ resource "helm_release" "argocd" {
     file("${path.module}/values/argocd-values.yaml")
   ]
 
-  # Override values with variables using the new syntax
-  set = [
-    {
-      name  = "global.domain"
-      value = var.argocd_hostname
-    },
-    {
-      name  = "redis-ha.enabled"
-      value = var.redis_ha_enabled
-    }
-  ]
-
-  # Set admin password if provided using set_sensitive
+  # Set admin password if provided
   set_sensitive = var.admin_password != "" ? [
     {
       name  = "configs.secret.argocdServerAdminPassword"
@@ -68,39 +30,40 @@ resource "helm_release" "argocd" {
     }
   ] : []
 
-  # Ensure configmap is created first
-  depends_on = [
-    kubernetes_namespace.argocd,
-    kubernetes_config_map.argocd_cmd_params
+  # Set essential global values
+  set = [
+    {
+      name  = "global.domain"
+      value = var.argocd_hostname
+    },
+    {
+      name  = "redis-ha.enabled"
+      value = tostring(var.redis_ha_enabled)
+    }
   ]
 
-  # Wait for deployment to be ready
+  depends_on = [
+    kubernetes_namespace.argocd
+  ]
+
   wait          = true
   wait_for_jobs = true
-  timeout       = 600
+  timeout       = 900
 }
 
-# Create ingress for ArgoCD with ExternalDNS annotations
+# CORRECTED FIX: Use a standard Kubernetes Ingress, which ExternalDNS is configured to find.
+# This ensures DNS records are created without changing previous steps.
 resource "kubernetes_ingress_v1" "argocd_ingress" {
   metadata {
     name      = "argocd-server-ingress"
     namespace = kubernetes_namespace.argocd.metadata[0].name
     annotations = {
-      # ExternalDNS configuration
-      "external-dns.alpha.kubernetes.io/target"           = var.tunnel_cname
-      "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true"
+      # Annotation for Traefik to use this Ingress
+      "kubernetes.io/ingress.class" : "traefik",
       
-      # Traefik annotations for your K3s setup
-      "traefik.ingress.kubernetes.io/router.entrypoints" = "web,websecure"
-      "traefik.ingress.kubernetes.io/router.tls"         = "true"
-      
-      # ArgoCD specific annotations
-      "nginx.ingress.kubernetes.io/force-ssl-redirect"   = "false"
-      "nginx.ingress.kubernetes.io/backend-protocol"     = "HTTP"
-    }
-    labels = {
-      "app.kubernetes.io/name"      = "argocd-server"
-      "app.kubernetes.io/component" = "ingress"
+      # Annotations for ExternalDNS
+      "external-dns.alpha.kubernetes.io/target" : var.tunnel_cname,
+      "external-dns.alpha.kubernetes.io/cloudflare-proxied" : "true"
     }
   }
 
@@ -109,8 +72,8 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
       host = var.argocd_hostname
       http {
         path {
-          path      = "/"
           path_type = "Prefix"
+          path      = "/"
           backend {
             service {
               name = "argocd-server"
@@ -121,36 +84,6 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
           }
         }
       }
-    }
-  }
-
-  depends_on = [helm_release.argocd]
-}
-
-# Service for better integration (optional, for monitoring)
-resource "kubernetes_service" "argocd_server_monitoring" {
-  metadata {
-    name      = "argocd-server-metrics"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
-    labels = {
-      "app.kubernetes.io/name"      = "argocd-server"
-      "app.kubernetes.io/component" = "metrics"
-    }
-  }
-
-  spec {
-    type = "ClusterIP"
-    
-    port {
-      name        = "metrics"
-      port        = 8083
-      target_port = 8083
-      protocol    = "TCP"
-    }
-
-    selector = {
-      "app.kubernetes.io/component" = "server"
-      "app.kubernetes.io/name"      = "argocd-server"
     }
   }
 

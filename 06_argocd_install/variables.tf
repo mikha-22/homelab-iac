@@ -32,11 +32,11 @@ variable "admin_password" {
 variable "redis_ha_enabled" {
   description = "Enable Redis HA for production"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "tunnel_cname" {
   description = "Your Cloudflare tunnel CNAME"
   type        = string
-  default     = "ac517172-480a-4780-8116-44deff8af5c1.cfargotunnel.com"
+  default     = "0051fa80-d5c3-4095-b44f-a8f6e77f404f.cfargotunnel.com"
 }

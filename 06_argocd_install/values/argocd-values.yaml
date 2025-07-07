@@ -24,10 +24,9 @@ server:
     serviceMonitor:
       enabled: false  # Enable if you have Prometheus Operator
       
-  # Additional command line arguments for insecure mode
+  # FIXED: Remove --rootpath=/ as it causes issues with Traefik
   extraArgs:
     - --insecure
-    - --grpc-web
 
   # Resource limits suitable for your homelab
   resources:
@@ -79,7 +78,7 @@ dex:
       cpu: 100m
       memory: 128Mi
 
-# Redis configuration
+# Redis configuration - disable HA for homelab
 redis:
   enabled: true
   resources:
@@ -90,26 +89,9 @@ redis:
       cpu: 100m
       memory: 128Mi
 
-# Redis HA (production setup)
+# Redis HA (disabled for homelab)
 redis-ha:
-  enabled: true  # Will be overridden by Terraform variable
-  haproxy:
-    enabled: true
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-  redis:
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
+  enabled: false  # Will be overridden by Terraform variable
 
 # Notifications
 notifications:
@@ -139,10 +121,12 @@ configs:
     # Server insecure mode - CRITICAL for Cloudflare
     server.insecure: true
     
-    # Additional parameters
-    server.rootpath: /
+    # REMOVED: server.rootpath (causes issues with Traefik)
     server.log.level: info
-    server.grpc.web: true
+    
+  # ADDED: ArgoCD server config map for URL
+  cm:
+    url: "https://argocd.milenika.dev"
     
   rbac:
     # Default policy for security
@@ -168,19 +152,6 @@ configs:
       
       # Default admin group
       g, argocd-admins, role:admin
-
-  # Secret management
-  secret:
-    # Let Terraform handle admin password if provided
-    createSecret: true
-    
-  # Repository credentials (add your repos here)
-  repositories: {}
-    # Example:
-    # - url: https://github.com/your-username/homelab-apps
-    #   type: git
-    #   name: homelab-apps
-    #   project: default
 
 # Resource customizations
 crds:

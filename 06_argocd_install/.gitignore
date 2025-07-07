@@ -8,4 +8,5 @@ repomix-output.xml
 *.*/
 .tfstate
 .tfstate.*
-
+terraform.tfstate
+terraform.tfstate.backup
