@@ -1,0 +1,1 @@
+kubectl delete applications --all -n argocd --force --grace-period=0; kubectl patch application monitoring -n argocd -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null; kubectl patch application root -n argocd -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null; kubectl delete namespace argocd --force --grace-period=0
