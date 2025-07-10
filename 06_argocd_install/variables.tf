@@ -38,5 +38,5 @@ variable "redis_ha_enabled" {
 variable "tunnel_cname" {
   description = "Your Cloudflare tunnel CNAME"
   type        = string
-  default     = "0051fa80-d5c3-4095-b44f-a8f6e77f404f.cfargotunnel.com"
+  default     = "c6c7a9c0-cde2-4e89-bd87-312697ffd4cc.cfargotunnel.com"
 }
