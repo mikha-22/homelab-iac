@@ -1,10 +1,89 @@
-.git
-./git/
-git/
+# ===================================================================
+#  Default Git / Repo-specific
+# ===================================================================
+# Ignore the git directory itself (though Git does this by default)
+.git/
+
+# Ignore Repomix output file
 repomix-output.xml
-/temp
+
+
+# ===================================================================
+#  General & Secrets
+# ===================================================================
+# Environment files, which often contain secrets
+*.env
+.env.*
+set_env.fish
+
+# Secret variable files for Packer
+*.auto.pkrvars.hcl
+
+# Log files
+*.log
+
+# Temporary files and directories
+/temp/
+*.tmp
+
+
+# ===================================================================
+#  Terraform
+# ===================================================================
+# Local Terraform state files and backups
+# CRITICAL: These files can contain sensitive infrastructure data.
+*.tfstate
+*.tfstate.*
+
+# Directory for local provider plugins
 .terraform/
-.*/
-*.*/
-.tfstate
-.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Terraform plan files, which can also contain sensitive info
+*.tfplan
+
+# Override files, should not be committed
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform CLI configuration files
+.terraformrc
+terraform.rc
+
+
+# ===================================================================
+#  Packer
+# ===================================================================
+# Packer cache directory
+packer-cache/
+
+
+# ===================================================================
+#  Ansible
+# ===================================================================
+# Python virtual environment directory
+# CRITICAL: This is large and specific to your local machine.
+ansible-venv/
+
+# Retry files created by Ansible on failed runs
+*.retry
+
+
+# ===================================================================
+#  IDE and OS-specific
+# ===================================================================
+# Common IDE/editor directories
+.vscode/
+.idea/
+.project
+.pydevproject
+.settings/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
