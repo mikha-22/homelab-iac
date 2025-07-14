@@ -55,4 +55,45 @@ secrets = {
     secret_data = "ikantuna11"
     description = "Grafana admin password"
   }
+  
+  # Proxmox API token
+  "proxmox-api-token" = {
+    secret_data = "terraform@pve!admin=15b3b928-488e-4a60-b471-ccb971aa8bc7"
+    description = "Proxmox API token for Terraform provider"
+  }
+  
+  # Proxmox SSH password
+  "proxmox-ssh-password" = {
+    secret_data = "ikantuna11"
+    description = "SSH password for Proxmox root user"
+  }
+  
+  # SSH private key path for Packer
+  "ssh-private-key-path" = {
+    secret_data = "~/.ssh/proxmox_key"
+    description = "Path to SSH private key for Packer/Proxmox access"
+  }
+  
+  # Cloudflare tunnel CNAME
+  "tunnel-cname" = {
+    secret_data = "eb69efc6-2d0f-424d-a170-53a8c30c65b7.cfargotunnel.com"
+    description = "Cloudflare tunnel CNAME for ArgoCD and other services"
+  }
+  
+  # Database credentials for future use
+  "postgres-password" = {
+    secret_data = "ikantuna11"
+    description = "PostgreSQL admin password"
+  }
+  
+  "postgres-user" = {
+    secret_data = "postgres"
+    description = "PostgreSQL admin username"
+  }
+  
+  # GitHub Actions runner token (for future self-hosted runners)
+  "github-runner-token" = {
+    secret_data = "REPLACE_WHEN_NEEDED"
+    description = "GitHub Actions runner registration token"
+  }
 }
