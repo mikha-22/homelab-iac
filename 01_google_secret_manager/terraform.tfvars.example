@@ -1,0 +1,58 @@
+# terraform.tfvars.example
+# Copy this to terraform.tfvars and fill in your values
+
+# Your GCP Project ID (create a new free project)
+project_id = "your-homelab-project-id"
+
+# GCP Region (us-central1 has good free tier coverage)
+region = "us-central1"
+
+# Your cluster name (for organization)
+k8s_cluster_name = "homelab-k3s"
+
+# Namespace where External Secrets Operator will be deployed
+k8s_namespace = "external-secrets"
+
+# Secrets to create in Google Secret Manager
+secrets = {
+  # ArgoCD admin password
+  "argocd-admin-password" = {
+    secret_data = "your-secure-argocd-password"
+    description = "ArgoCD admin password for homelab"
+  }
+  
+  # MinIO credentials
+  "minio-root-user" = {
+    secret_data = "minio-admin"
+    description = "MinIO root username"
+  }
+  
+  "minio-root-password" = {
+    secret_data = "your-secure-minio-password"
+    description = "MinIO root password"
+  }
+  
+  # Cloudflare API token for External DNS
+  "cloudflare-api-token" = {
+    secret_data = "your-cloudflare-api-token"
+    description = "Cloudflare API token for External DNS"
+  }
+  
+  # GitHub Actions runner token (if using self-hosted runners)
+  "github-runner-token" = {
+    secret_data = "your-github-runner-token"
+    description = "GitHub Actions runner registration token"
+  }
+  
+  # Database credentials (if you add a database later)
+  "postgres-password" = {
+    secret_data = "your-secure-db-password"
+    description = "PostgreSQL admin password"
+  }
+  
+  # Grafana admin password
+  "grafana-admin-password" = {
+    secret_data = "your-secure-grafana-password"
+    description = "Grafana admin password"
+  }
+}
