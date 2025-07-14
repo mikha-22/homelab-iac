@@ -1,30 +1,24 @@
 # ===================================================================
 #  PROJECT: BASE IMAGES
 #  Manages the downloading of OS images to Proxmox.
-#  This configuration should be run once and rarely changed.
 # ===================================================================
 
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.70.1"
-    }
-  }
+# --- GOOGLE PROVIDER FOR FETCHING SECRETS ---
+provider "google" {
+  project = "homelab-secret-manager"
 }
 
-# --- SECRET VARIABLES ---
-variable "pm_api_token" {
-  description = "The API token for the Proxmox provider."
-  sensitive   = true
+# --- DATA SOURCE TO FETCH PROXMOX API TOKEN ---
+data "google_secret_manager_secret_version" "pm_api_token" {
+  secret = "proxmox-api-token"
 }
 
 # --- PROVIDER CONFIGURATION ---
 provider "proxmox" {
   endpoint  = "https://pve1.local:8006"
   insecure  = true
-  api_token = var.pm_api_token
+  # CHANGED: Use the fetched secret directly
+  api_token = trimspace(data.google_secret_manager_secret_version.pm_api_token.secret_data)
 }
 
 # --- IMAGE DOWNLOAD RESOURCE ---
@@ -40,5 +34,3 @@ output "ubuntu_image_id" {
   description = "The ID of the downloaded Ubuntu cloud image."
   value       = proxmox_virtual_environment_download_file.ubuntu_noble.id
 }
-
-

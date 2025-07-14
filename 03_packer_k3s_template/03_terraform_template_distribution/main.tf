@@ -4,16 +4,6 @@
 #  FIXED: Now actually copies disk data, not just config references
 # ===================================================================
 
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
-  }
-}
-
 # --- VARIABLES ---
 variable "ssh_key_path" {
   description = "Path to SSH private key for Proxmox authentication"

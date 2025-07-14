@@ -3,46 +3,43 @@
 #  Creates cloud-init file on SHARED storage for cross-node access
 # ===================================================================
 
-terraform {
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.70.1"
-    }
-  }
+# --- GOOGLE PROVIDER CONFIGURATION ---
+provider "google" {
+  project = "homelab-secret-manager"
 }
 
-variable "pm_api_token" {
-  type      = string
-  sensitive = true
+# --- DATA SOURCES FOR SECRETS ---
+data "google_secret_manager_secret_version" "pm_api_token" {
+  secret = "proxmox-api-token"
 }
-variable "pm_ssh_password" {
-  type      = string
-  sensitive = true
+data "google_secret_manager_secret_version" "pm_ssh_password" {
+  secret = "proxmox-ssh-password"
 }
 
+# --- PROXMOX PROVIDER CONFIGURATION ---
 provider "proxmox" {
   endpoint  = "https://pve1.local:8006"
   insecure  = true
-  api_token = var.pm_api_token
+  api_token = trimspace(data.google_secret_manager_secret_version.pm_api_token.secret_data)
   ssh {
     username = "root"
-    password = var.pm_ssh_password
+    password = trimspace(data.google_secret_manager_secret_version.pm_ssh_password.secret_data)
   }
 }
 
 # --- DATA SOURCE TO GET BASE IMAGE ID ---
 data "terraform_remote_state" "base_images" {
-  backend = "local"
+  backend = "gcs"
   config = {
-    path = "../../01_create_nas/01_base_images/terraform.tfstate"
+    bucket = "homelab-terraform-state-shared"
+    prefix = "02_create_nas/01_base_images"
   }
 }
 
-# --- FIXED: CREATE CLOUD-INIT FILE ON SHARED STORAGE ---
+# --- CREATE CLOUD-INIT FILE ON SHARED STORAGE ---
 resource "proxmox_virtual_environment_file" "packer_auth_init" {
   content_type = "snippets"
-  datastore_id = "cluster-shared-nfs"  # FIXED: Use shared storage instead of local
+  datastore_id = "cluster-shared-nfs"
   node_name    = "pve1"
 
   source_raw {
@@ -95,7 +92,7 @@ resource "proxmox_virtual_environment_vm" "base_cloud_template" {
   
   initialization {
     user_data_file_id = proxmox_virtual_environment_file.packer_auth_init.id
-    datastore_id      = "cluster-shared-nfs"  # FIXED: Use shared storage for cloud-init ISO
+    datastore_id      = "cluster-shared-nfs"
     dns {
       servers = ["1.1.1.1", "8.8.8.8"]
     }

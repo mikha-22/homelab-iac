@@ -1,3 +1,28 @@
+# --- GOOGLE PROVIDER CONFIGURATION ---
+provider "google" {
+  project = "homelab-secret-manager"
+}
+
+# --- DATA SOURCES FOR SECRETS ---
+data "google_secret_manager_secret_version" "argocd_admin_password" {
+  secret = "argocd-admin-password"
+}
+
+data "google_secret_manager_secret_version" "tunnel_cname" {
+  secret = "tunnel-cname"
+}
+
+# --- KUBERNETES AND HELM PROVIDERS ---
+provider "kubernetes" {
+  config_path = var.kubeconfig_path
+}
+
+provider "helm" {
+  kubernetes = {
+    config_path = var.kubeconfig_path
+  }
+}
+
 # Create namespace for ArgoCD
 resource "kubernetes_namespace" "argocd" {
   metadata {
@@ -17,20 +42,18 @@ resource "helm_release" "argocd" {
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   version    = var.chart_version
 
-  # Use custom values file
   values = [
     file("${path.module}/values/argocd-values.yaml")
   ]
 
-  # Set admin password if provided
-  set_sensitive = var.admin_password != "" ? [
+  # Set admin password if the secret exists and has content
+  set_sensitive = [
     {
       name  = "configs.secret.argocdServerAdminPassword"
-      value = var.admin_password
+      value = trimspace(data.google_secret_manager_secret_version.argocd_admin_password.secret_data)
     }
-  ] : []
+  ]
 
-  # Set essential global values
   set = [
     {
       name  = "global.domain"
@@ -52,17 +75,13 @@ resource "helm_release" "argocd" {
 }
 
 # CORRECTED FIX: Use a standard Kubernetes Ingress, which ExternalDNS is configured to find.
-# This ensures DNS records are created without changing previous steps.
 resource "kubernetes_ingress_v1" "argocd_ingress" {
   metadata {
     name      = "argocd-server-ingress"
     namespace = kubernetes_namespace.argocd.metadata[0].name
     annotations = {
-      # Annotation for Traefik to use this Ingress
       "kubernetes.io/ingress.class" : "traefik",
-      
-      # Annotations for ExternalDNS
-      "external-dns.alpha.kubernetes.io/target" : var.tunnel_cname,
+      "external-dns.alpha.kubernetes.io/target" : trimspace(data.google_secret_manager_secret_version.tunnel_cname.secret_data),
       "external-dns.alpha.kubernetes.io/cloudflare-proxied" : "true"
     }
   }

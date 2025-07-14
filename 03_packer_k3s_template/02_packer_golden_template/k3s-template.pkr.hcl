@@ -1,3 +1,15 @@
+/*
+=================================================================
+  FIXED PACKER TEMPLATE - JUST RUN: packer build .
+=================================================================
+Set environment variable first:
+export PKR_VAR_pm_api_token=$(gcloud secrets versions access latest --secret=proxmox-api-token)
+
+Then run:
+packer build .
+=================================================================
+*/
+
 packer {
   required_plugins {
     proxmox = {
@@ -11,12 +23,13 @@ packer {
 variable "pm_api_token" {
   type      = string
   sensitive = true
-  description = "Proxmox API Token in the format 'user@realm!tokenid=secret'."
+  description = "Proxmox API Token - set via PKR_VAR_pm_api_token environment variable"
 }
 
 variable "ssh_private_key_file" {
   type = string
   description = "Path to the SSH private key for connecting to the VM."
+  default = "~/.ssh/id_rsa"
 }
 
 variable "proxmox_url" {
@@ -41,13 +54,12 @@ variable "new_template_id" {
 
 variable "new_template_name" {
   type    = string
-  default = "ubuntu-2404-clean-template"
+  default = "ubuntu-2404-k3s-template"
 }
 
 variable "storage_pool" {
   type    = string
   default = "cluster-shared-nfs"
-  description = "Storage pool for cloud-init storage"
 }
 
 # --- Locals ---
@@ -67,20 +79,21 @@ source "proxmox-clone" "clean_template" {
   node     = var.base_template_node
   clone_vm = var.base_template_name
 
-  # --- Use full clone for local-lvm storage ---
+  # --- Use full clone ---
   full_clone = true
 
   # --- Communicator ---
   communicator           = "ssh"
   ssh_username           = "ubuntu"
   ssh_private_key_file   = var.ssh_private_key_file
-  ssh_timeout            = "30m"
-  ssh_handshake_attempts = 20
+  ssh_timeout            = "20m"
+  ssh_handshake_attempts = 200
+  ssh_pty                = true
 
   # --- New Template ---
   vm_id                = var.new_template_id
   template_name        = var.new_template_name
-  template_description = "Clean Ubuntu 24.04 template for K3s deployment via Ansible."
+  template_description = "K3s-ready Ubuntu 24.04 template"
   
   # --- Hardware Configuration ---
   cores  = 2
@@ -103,8 +116,8 @@ source "proxmox-clone" "clean_template" {
   # --- DNS Configuration ---
   nameserver = "1.1.1.1 8.8.8.8"
   
-  # --- Boot Configuration ---
-  boot_wait = "30s"
+  # --- CRITICAL: Longer boot wait ---
+  boot_wait = "120s"
 }
 
 # --- Build ---
@@ -121,34 +134,49 @@ build {
       "sudo DEBIAN_FRONTEND=noninteractive apt-get -yq upgrade",
       "echo 'Package update complete.'"
     ]
+    timeout = "30m"
   }
 
-  # Step 2: Install common packages that K3s will need
+  # Step 2: Install packages for K3s
   provisioner "shell" {
     inline = [
-      "echo 'Installing common packages for K3s...'",
-      "sudo apt-get install -y curl wget apt-transport-https ca-certificates software-properties-common",
-      "echo 'Common packages installed.'"
+      "echo 'Installing K3s prerequisites...'",
+      "sudo apt-get install -y curl wget apt-transport-https ca-certificates software-properties-common nfs-common open-iscsi",
+      "echo 'Prerequisites installed.'"
+    ]
+  }
+
+  # Step 3: Configure system for K3s
+  provisioner "shell" {
+    inline = [
+      "echo 'Configuring system for K3s...'",
+      "sudo modprobe br_netfilter",
+      "sudo modprobe overlay",
+      "echo 'br_netfilter' | sudo tee /etc/modules-load.d/k3s.conf",
+      "echo 'overlay' | sudo tee -a /etc/modules-load.d/k3s.conf",
+      "echo 'net.bridge.bridge-nf-call-iptables = 1' | sudo tee /etc/sysctl.d/k3s.conf",
+      "echo 'net.bridge.bridge-nf-call-ip6tables = 1' | sudo tee -a /etc/sysctl.d/k3s.conf",
+      "echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.d/k3s.conf",
+      "sudo sysctl --system",
+      "echo 'System configuration complete.'"
     ]
   }
   
-  # Step 3: Clean up the image to make it a generic template
+  # Step 4: Clean up for templating
   provisioner "shell" {
     inline = [
-      "echo 'Cleaning up image for templating...'",
-      # Clean SSH host keys so each VM gets unique ones
+      "echo 'Cleaning up for template creation...'",
       "sudo rm -f /etc/ssh/ssh_host_*",
-      # Clean cloud-init state
       "sudo cloud-init clean -s -l",
-      # Clean bash history
       "history -c || true",
       "cat /dev/null > ~/.bash_history",
-      # Clean package cache
       "sudo apt-get clean",
-      # Clean logs
+      "sudo apt-get autoremove -y",
       "sudo truncate -s 0 /var/log/*log",
-      "echo 'Image cleanup complete - ready for K3s deployment via Ansible.'",
-      "sudo systemctl enable ssh"
+      "sudo find /var/log -type f -name '*.log' -exec truncate -s 0 {} \\;",
+      "echo 'Template cleanup complete.'",
+      "sudo systemctl enable ssh",
+      "sudo sync"
     ]
     expect_disconnect = true
   }

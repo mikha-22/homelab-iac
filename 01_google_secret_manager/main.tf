@@ -14,6 +14,31 @@ data "google_project" "current" {
   project_id = var.project_id
 }
 
+# --- LOCALS ---
+# Merge the static secrets from the tfvars file with the dynamic SSH key secrets.
+# This allows us to manage all secrets with a single, clean for_each loop.
+locals {
+  all_secrets = merge(
+    var.secrets,
+    
+    # Conditionally add the user SSH key secret if a path is provided.
+    var.ssh_public_key_path != "" ? {
+      "nas-vm-ssh-key" = {
+        secret_data = file(var.ssh_public_key_path)
+        description = "Public SSH key for general VM user access, managed by Terraform."
+      }
+    } : {},
+
+    # Conditionally add the Packer SSH key secret if a path is provided.
+    var.packer_public_key_path != "" ? {
+      "packer-vm-ssh-key-public" = {
+        secret_data = file(var.packer_public_key_path)
+        description = "Public SSH key for Packer automation to provision VM templates."
+      }
+    } : {}
+  )
+}
+
 # --- ENABLE APIS ---
 resource "google_project_service" "secretmanager" {
   service = "secretmanager.googleapis.com"
@@ -31,7 +56,8 @@ resource "google_project_service" "iam" {
 
 # --- SECRET MANAGER SECRETS ---
 resource "google_secret_manager_secret" "homelab_secrets" {
-  for_each = var.secrets
+  # Use the merged local map instead of the variable directly.
+  for_each = local.all_secrets
 
   secret_id = each.key
   
@@ -49,7 +75,8 @@ resource "google_secret_manager_secret" "homelab_secrets" {
 }
 
 resource "google_secret_manager_secret_version" "homelab_secret_versions" {
-  for_each = var.secrets
+  # Use the merged local map here as well.
+  for_each = local.all_secrets
 
   secret      = google_secret_manager_secret.homelab_secrets[each.key].name
   secret_data = each.value.secret_data

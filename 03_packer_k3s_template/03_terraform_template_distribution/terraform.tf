@@ -3,13 +3,13 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "01_google_secret_manager"
+    prefix = "03_packer_k3s_template/03_terraform_template_distribution"
   }
   
   required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 6.0"
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
   }
 }

@@ -3,17 +3,13 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "07_argocd_install"
+    prefix = "04_terraform_homelab/01_create_vm"
   }
   
   required_providers {
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 3.0"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.32"
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "~> 0.70.1"
     }
     google = {
       source  = "hashicorp/google"

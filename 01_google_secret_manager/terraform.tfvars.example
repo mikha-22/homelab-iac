@@ -13,6 +13,12 @@ k8s_cluster_name = "homelab-k3s"
 # Namespace where External Secrets Operator will be deployed
 k8s_namespace = "external-secrets"
 
+# Path to your public SSH key for general VM access
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# Path to your public SSH key for Packer automation
+packer_public_key_path = "~/.ssh/packer_key.pub"
+
 # Secrets to create in Google Secret Manager
 secrets = {
   # ArgoCD admin password

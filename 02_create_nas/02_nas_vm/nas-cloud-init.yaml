@@ -1,0 +1,21 @@
+#cloud-config
+users:
+  - name: mikha
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+ssh_pwauth: false
+packages:
+  - nfs-kernel-server
+  - qemu-guest-agent
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  - mkdir -p /export/proxmox-storage
+  - chown nobody:nogroup /export/proxmox-storage
+  - chmod 777 /export/proxmox-storage
+  - 'echo "/export/proxmox-storage *(rw,sync,no_subtree_check,no_root_squash)" > /etc/exports'
+  - exportfs -a
+  - systemctl restart nfs-kernel-server

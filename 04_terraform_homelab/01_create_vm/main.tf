@@ -1,39 +1,49 @@
 # ===================================================================
-#  PHASE 3: DEPLOY K3S CLUSTER FROM GOLDEN IMAGE - WITH UNIQUE HOSTNAMES
-#  Fixed to set unique hostnames via cloud-init
+#  PHASE 3: DEPLOY K3S CLUSTER FROM GOLDEN IMAGE - SECURE VERSION
+#  Fetches all secrets from Google Secret Manager and uses templates
+#  for cloud-init configuration.
 # ===================================================================
 
-terraform {
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.70.1"
-    }
-  }
+# --- GOOGLE PROVIDER CONFIGURATION ---
+provider "google" {
+  project = "homelab-secret-manager"
 }
 
-variable "pm_api_token" {
-  description = "The API token for the Proxmox provider."
-  sensitive   = true
+# --- DATA SOURCES FOR SECRETS ---
+data "google_secret_manager_secret_version" "pm_api_token" {
+  secret = "proxmox-api-token"
+}
+data "google_secret_manager_secret_version" "pm_ssh_password" {
+  secret = "proxmox-ssh-password"
+}
+# Fetch the general user SSH key for node access.
+data "google_secret_manager_secret_version" "user_ssh_key" {
+  secret = "nas-vm-ssh-key"
 }
 
-variable "pm_ssh_password" {
-  description = "The SSH password for the Proxmox nodes."
-  sensitive   = true
-}
-
+# --- PROXMOX PROVIDER CONFIGURATION ---
 provider "proxmox" {
   endpoint  = "https://pve1.local:8006"
   insecure  = true
-  api_token = var.pm_api_token
+  api_token = trimspace(data.google_secret_manager_secret_version.pm_api_token.secret_data)
   
   ssh {
     username = "root"
-    password = var.pm_ssh_password
+    password = trimspace(data.google_secret_manager_secret_version.pm_ssh_password.secret_data)
   }
 }
 
-# --- Cloud-init files for setting unique hostnames ---
+# --- RENDER CLOUD-INIT TEMPLATES ---
+locals {
+  master_init_content = templatefile("${path.module}/master-init.yaml", {
+    user_ssh_public_key = trimspace(data.google_secret_manager_secret_version.user_ssh_key.secret_data)
+  })
+  worker_init_content = templatefile("${path.module}/worker-init.yaml", {
+    user_ssh_public_key = trimspace(data.google_secret_manager_secret_version.user_ssh_key.secret_data)
+  })
+}
+
+# --- UPLOAD RENDERED CLOUD-INIT FILES ---
 resource "proxmox_virtual_environment_file" "master_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -41,52 +51,22 @@ resource "proxmox_virtual_environment_file" "master_cloud_init" {
 
   source_raw {
     file_name = "master-hostname-init.yaml"
-    data      = <<-EOT
-      #cloud-config
-      hostname: dev-k3s-master-01
-      manage_etc_hosts: true
-      
-      # Preserve existing SSH keys
-      ssh_authorized_keys:
-        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCSo7JnBBuSGhZp1EBI1D3zqAV5Y/zSr70LU21JYALlhv68W8wrMDQxn4KphXh2URGuYmCAF5/gyeV49Sinl0SbNErCqQGMPQlEYYm9eru+svEtaDhH5xuJYVzqoSTsS6iDsTp/kHASbnFb9lSAa0jo8RaXSbtzUHPL7lpO+YdVbKEJq0MK9B4dkNWsOHOnjFKJ35cL2u8h2SPHOZO7k7w3maPaDGrXaalv8skvfgPhrJ8zPwgs/r5g6X+LCl4LgVq4RZs9ssg+m389t4ezGoHyyfBqOzTgptugxb8Oq6Ml0nMe6f7sCudpYRc+/wwstCzarvowyPv5Cc9ZmnQOpuxAmU+GSR61T0+rZXtbcjwZVDS+CjpE/y1V1qIeR+IzhfQhTcqVBYcfH/Jg1HKIXlvNR6OdO6m8SawnPSzjgnxAFiXmp6m12M/xL6BYTYb8AaANnbZe6PgZCJzGqBwt6tGZ9hCcVLTavYXNO8fLcAqToZucCMMUs0mT+7NECsb0iSi1SD9FLaaEPNBIc3GvT4Lo1VcerRpy+6hJ1qzDWkZsQV7V4Kasfm/NIsH1Vu8/QkkQXi6J1CR5B2L9HjoXu2uA9qeEi8u7QUbB3T90+0PXwY/7J3VHZKwAkuxo3tfKyHcjJnJoBBsQ3RjGnVz3DOvvqNcs/xeZP5XQskdozP82vw== milenikaiqbal@gmail.com"
-        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDJ7XAzKzFPAaScqA8tnLM99BzKkBv6U3pkdQWtVkZ/QZhasSbhWzieWHAvoKqQqR8aEGDO8BbXx6CAGnbJPXRfPtArgtyj3gm6UVQq4CBpJWI2hBdeMFHyzZmINs5SrgW20Lrh+XCJczLxXTvkv4tfok88IeEmnrSmrq0l6Y/1lVPK9Wrc9hjtycQGdooe3rKs8FicO3kinUa4C+t/vCoZbYbtSEI04rR/NvTwk3UFAhiOIVKDIqC7CuQaPz/s8bMQk8rOuVGkf8kM2rkUMYUN030AcgXzYuDoFLgUtonqqUGrF2liHj2owd83af2k+HRZL2fCqbNwY7Iz1vnUyxPpMWSjoQJixl6MMEBrJyn6TnYIHgeaa2YaIicOE9Ze1vpscfZ1oRrJfJU2sL+1elVEXkrqJfJlpRWHK0IfKTWtpdVD6j8x2RshAKMfBnavmhm2fIiizfePSE8VIlMWMQ9AzqQsyzXVsYXULRd+N4xfoWR6z4A8R4iTFIAqGneD08RX1JYQqaCicobxYYVIqCey3wbFY7AbahGsI7SdJsqkTUOdKIWYHiCsp1H2Hl0jMj5dERy/ZY2a8cFpZSjMG2cyJz0Ji8eMORg7fwrHMOmKDieSedAl4wk+cYHzRUR+9Mj9RubgFeO743i/7K8Yf+pKKzC3dhavtE8wY7qmh6Xa9Q== mikha@T440p"
-      
-      packages:
-        - qemu-guest-agent
-      
-      runcmd:
-        - systemctl enable --now qemu-guest-agent
-    EOT
+    data      = local.master_init_content
   }
 }
 
 resource "proxmox_virtual_environment_file" "worker_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
-  node_name    = "pve2"
+  node_name    = "pve2" # Assuming worker is on pve2 for cloud-init storage
 
   source_raw {
     file_name = "worker-hostname-init.yaml"
-    data      = <<-EOT
-      #cloud-config
-      hostname: dev-k3s-worker-01
-      manage_etc_hosts: true
-      
-      # Preserve existing SSH keys
-      ssh_authorized_keys:
-        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCSo7JnBBuSGhZp1EBI1D3zqAV5Y/zSr70LU21JYALlhv68W8wrMDQxn4KphXh2URGuYmCAF5/gyeV49Sinl0SbNErCqQGMPQlEYYm9eru+svEtaDhH5xuJYVzqoSTsS6iDsTp/kHASbnFb9lSAa0jo8RaXSbtzUHPL7lpO+YdVbKEJq0MK9B4dkNWsOHOnjFKJ35cL2u8h2SPHOZO7k7w3maPaDGrXaalv8skvfgPhrJ8zPwgs/r5g6X+LCl4LgVq4RZs9ssg+m389t4ezGoHyyfBqOzTgptugxb8Oq6Ml0nMe6f7sCudpYRc+/wwstCzarvowyPv5Cc9ZmnQOpuxAmU+GSR61T0+rZXtbcjwZVDS+CjpE/y1V1qIeR+IzhfQhTcqVBYcfH/Jg1HKIXlvNR6OdO6m8SawnPSzjgnxAFiXmp6m12M/xL6BYTYb8AaANnbZe6PgZCJzGqBwt6tGZ9hCcVLTavYXNO8fLcAqToZucCMMUs0mT+7NECsb0iSi1SD9FLaaEPNBIc3GvT4Lo1VcerRpy+6hJ1qzDWkZsQV7V4Kasfm/NIsH1Vu8/QkkQXi6J1CR5B2L9HjoXu2uA9qeEi8u7QUbB3T90+0PXwY/7J3VHZKwAkuxo3tfKyHcjJnJoBBsQ3RjGnVz3DOvvqNcs/xeZP5XQskdozP82vw== milenikaiqbal@gmail.com"
-        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDJ7XAzKzFPAaScqA8tnLM99BzKkBv6U3pkdQWtVkZ/QZhasSbhWzieWHAvoKqQqR8aEGDO8BbXx6CAGnbJPXRfPtArgtyj3gm6UVQq4CBpJWI2hBdeMFHyzZmINs5SrgW20Lrh+XCJczLxXTvkv4tfok88IeEmnrSmrq0l6Y/1lVPK9Wrc9hjtycQGdooe3rKs8FicO3kinUa4C+t/vCoZbYbtSEI04rR/NvTwk3UFAhiOIVKDIqC7CuQaPz/s8bMQk8rOuVGkf8kM2rkUMYUN030AcgXzYuDoFLgUtonqqUGrF2liHj2owd83af2k+HRZL2fCqbNwY7Iz1vnUyxPpMWSjoQJixl6MMEBrJyn6TnYIHgeaa2YaIicOE9Ze1vpscfZ1oRrJfJU2sL+1elVEXkrqJfJlpRWHK0IfKTWtpdVD6j8x2RshAKMfBnavmhm2fIiizfePSE8VIlMWMQ9AzqQsyzXVsYXULRd+N4xfoWR6z4A8R4iTFIAqGneD08RX1JYQqaCicobxYYVIqCey3wbFY7AbahGsI7SdJsqkTUOdKIWYHiCsp1H2Hl0jMj5dERy/ZY2a8cFpZSjMG2cyJz0Ji8eMORg7fwrHMOmKDieSedAl4wk+cYHzRUR+9Mj9RubgFeO743i/7K8Yf+pKKzC3dhavtE8wY7qmh6Xa9Q== mikha@T440p"
-      
-      packages:
-        - qemu-guest-agent
-      
-      runcmd:
-        - systemctl enable --now qemu-guest-agent
-    EOT
+    data      = local.worker_init_content
   }
 }
 
-# --- Master VM (with unique hostname) ---
+# --- MASTER VM ---
 resource "proxmox_virtual_environment_vm" "master" {
   name      = "dev-k3s-master-01"
   node_name = "pve1"
@@ -120,7 +100,7 @@ resource "proxmox_virtual_environment_vm" "master" {
   }
 }
 
-# --- Worker VM (with unique hostname) ---
+# --- WORKER VM ---
 resource "proxmox_virtual_environment_vm" "worker" {
   name      = "dev-k3s-worker-01"
   node_name = "pve2"
@@ -154,7 +134,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
   }
 }
 
-# --- Outputs ---
+# --- OUTPUTS ---
 output "web_server_ips" {
   description = "The IP addresses of the created k3s servers."
   value = {

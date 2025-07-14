@@ -29,3 +29,15 @@ variable "secrets" {
   }))
   default = {}
 }
+
+variable "ssh_public_key_path" {
+  description = "Path to the public SSH key file for general VM user access."
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
+}
+
+variable "packer_public_key_path" {
+  description = "Path to the public SSH key that Packer will use to provision templates."
+  type        = string
+  default     = "~/.ssh/packer_key.pub"
+}
