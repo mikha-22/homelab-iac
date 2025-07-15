@@ -1,99 +1,144 @@
-# terraform.tfvars
+# 01_google_secret_manager/terraform.tfvars
+# Complete secret configuration for GitOps deployment
+
+# Your GCP Project ID
 project_id = "homelab-secret-manager"
+
+# GCP Region
 region = "asia-southeast1"
+
+# Your cluster name
 k8s_cluster_name = "homelab-k3s"
+
+# Namespace where External Secrets Operator will be deployed
 k8s_namespace = "external-secrets"
 
+# Path to your public SSH key for general VM access
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# Path to your public SSH key for Packer automation
+packer_public_key_path = "~/.ssh/id_rsa.pub"
+
+# Complete secrets configuration for GitOps
 secrets = {
-  # ArgoCD admin password
-  "argocd-admin-password" = {
-    secret_data = "ikantuna11"
-    description = "ArgoCD admin password for homelab"
+  # === INFRASTRUCTURE SECRETS ===
+  
+  # Proxmox API credentials
+  "proxmox-api-token" = {
+    secret_data = "terraform@pve!admin=15b3b928-488e-4a60-b471-ccb971aa8bc7"
+    description = "Proxmox API token for Terraform automation"
   }
   
-  # MinIO root credentials
+  "proxmox-ssh-password" = {
+    secret_data = "your-proxmox-root-password"
+    description = "Proxmox root SSH password"
+  }
+  
+  # Cloudflare credentials
+  "cloudflare-api-token" = {
+    secret_data = "your-cloudflare-api-token"
+    description = "Cloudflare API token for External DNS and tunnel management"
+  }
+  
+  "cloudflare-account-id" = {
+    secret_data = "your-cloudflare-account-id"
+    description = "Cloudflare account ID for tunnel configuration"
+  }
+  
+  "tunnel-cname" = {
+    secret_data = "a62a3256-8662-4884-8f28-607bfa7526a9.cfargotunnel.com"
+    description = "Cloudflare tunnel CNAME for ingress configuration"
+  }
+  
+  # === APPLICATION SECRETS ===
+  
+  # ArgoCD admin credentials
+  "argocd-admin-password" = {
+    secret_data = "your-secure-argocd-password"
+    description = "ArgoCD admin password for GitOps dashboard access"
+  }
+  
+  # Grafana admin credentials
+  "grafana-admin-password" = {
+    secret_data = "your-secure-grafana-password"
+    description = "Grafana admin password for monitoring dashboard"
+  }
+  
+  # MinIO credentials
   "minio-root-user" = {
     secret_data = "admin"
-    description = "MinIO root username"
+    description = "MinIO root username for object storage"
   }
   
   "minio-root-password" = {
-    secret_data = "ikantuna11"
-    description = "MinIO root password"
+    secret_data = "your-secure-minio-password"
+    description = "MinIO root password for object storage admin access"
   }
   
-  # MinIO Hugo user credentials
   "minio-hugo-access-key" = {
     secret_data = "hugo-access"
-    description = "MinIO user access key for Hugo deployment"
+    description = "MinIO access key for Hugo static site deployment"
   }
   
   "minio-hugo-secret-key" = {
-    secret_data = "ikantuna11"
-    description = "MinIO user secret key for Hugo deployment"
+    secret_data = "your-secure-hugo-secret-key"
+    description = "MinIO secret key for Hugo static site deployment"
   }
   
-  # Cloudflare API token (keep your real token)
-  "cloudflare-api-token" = {
-    secret_data = "NtdA-v9tJW_qw8V4sFTsRztTK8L6UFbpjLLrwX7b"
-    description = "Cloudflare API token for External DNS"
-  }
+  # === OPTIONAL SECRETS FOR FUTURE USE ===
   
-  # Cloudflare account/zone info
-  "cloudflare-account-id" = {
-    secret_data = "590c0c0cf8f069d510a0b3712e2c301c"
-    description = "Cloudflare Account ID"
-  }
-  
-  "cloudflare-zone-id" = {
-    secret_data = "6894bdff4c224281ce8f72e34a4df11b"
-    description = "Cloudflare Zone ID for milenika.dev"
-  }
-  
-  # Grafana admin password
-  "grafana-admin-password" = {
-    secret_data = "ikantuna11"
-    description = "Grafana admin password"
-  }
-  
-  # Proxmox API token
-  "proxmox-api-token" = {
-    secret_data = "terraform@pve!admin=15b3b928-488e-4a60-b471-ccb971aa8bc7"
-    description = "Proxmox API token for Terraform provider"
-  }
-  
-  # Proxmox SSH password
-  "proxmox-ssh-password" = {
-    secret_data = "ikantuna11"
-    description = "SSH password for Proxmox root user"
-  }
-  
-  # SSH private key path for Packer
-  "ssh-private-key-path" = {
-    secret_data = "~/.ssh/proxmox_key"
-    description = "Path to SSH private key for Packer/Proxmox access"
-  }
-  
-  # Cloudflare tunnel CNAME
-  "tunnel-cname" = {
-    secret_data = "eb69efc6-2d0f-424d-a170-53a8c30c65b7.cfargotunnel.com"
-    description = "Cloudflare tunnel CNAME for ArgoCD and other services"
-  }
-  
-  # Database credentials for future use
+  # Database credentials (for future database deployments)
   "postgres-password" = {
-    secret_data = "ikantuna11"
+    secret_data = "your-secure-db-password"
     description = "PostgreSQL admin password"
   }
   
-  "postgres-user" = {
-    secret_data = "postgres"
-    description = "PostgreSQL admin username"
+  "mysql-root-password" = {
+    secret_data = "your-secure-mysql-password"
+    description = "MySQL root password"
   }
   
-  # GitHub Actions runner token (for future self-hosted runners)
+  # GitHub Actions runner token (if using self-hosted runners)
   "github-runner-token" = {
-    secret_data = "REPLACE_WHEN_NEEDED"
+    secret_data = "your-github-runner-token"
     description = "GitHub Actions runner registration token"
+  }
+  
+  # Email/SMTP credentials (for notifications)
+  "smtp-username" = {
+    secret_data = "your-smtp-username"
+    description = "SMTP username for email notifications"
+  }
+  
+  "smtp-password" = {
+    secret_data = "your-smtp-password"
+    description = "SMTP password for email notifications"
+  }
+  
+  # SSL certificate secrets (if using custom certs)
+  "tls-cert" = {
+    secret_data = "your-tls-certificate"
+    description = "Custom TLS certificate for applications"
+  }
+  
+  "tls-key" = {
+    secret_data = "your-tls-private-key"
+    description = "Custom TLS private key for applications"
+  }
+  
+  # Backup storage credentials
+  "backup-s3-access-key" = {
+    secret_data = "your-backup-access-key"
+    description = "S3 access key for backup storage"
+  }
+  
+  "backup-s3-secret-key" = {
+    secret_data = "your-backup-secret-key"
+    description = "S3 secret key for backup storage"
+  }
+
+  "external-secrets-service-account-key" = {
+    secret_data = "PLACEHOLDER-WILL-BE-UPDATED-AFTER-KEY-CREATION"
+    description = "Service account key for External Secrets Operator to access GCP Secret Manager"
   }
 }
