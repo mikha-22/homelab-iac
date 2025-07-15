@@ -1,4 +1,6 @@
-
+*/.terraform.lock.hcl
+.terraform/providers/registry.terraform.io/hashicorp/google/6.43.0/linux_amd64/LICENSE.txt
+.terraform.lock.hcl
 **/terraform.tfvars
 
 # ===================================================================
