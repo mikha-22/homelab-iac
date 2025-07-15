@@ -3,7 +3,6 @@
 # =================================================================
 
 # --- DATA SOURCES FOR SECRETS ---
-# Note: These are required by the provider configurations in providers.tf
 data "google_secret_manager_secret_version" "cloudflare_api_token" {
   secret = "cloudflare-api-token"
 }
@@ -178,5 +177,35 @@ resource "kubernetes_deployment" "cloudflared" {
   depends_on = [
     kubernetes_secret.tunnel_credentials,
     cloudflare_zero_trust_tunnel_cloudflared_config.k3s_tunnel_config
+  ]
+}
+
+# =================================================================
+#  NEW: STORE GENERATED OUTPUTS IN SECRET MANAGER
+# =================================================================
+
+# 11. Create a secret "slot" for the tunnel CNAME
+resource "google_secret_manager_secret" "tunnel_cname_secret" {
+  secret_id = "tunnel-cname"
+  
+  labels = {
+    environment = "homelab"
+    managed_by  = "terraform"
+    component   = "cloudflare-tunnel"
+  }
+
+  replication {
+    auto {}
+  }
+}
+
+# 12. Populate the secret with the actual CNAME value from the created tunnel
+resource "google_secret_manager_secret_version" "tunnel_cname_secret_version" {
+  secret      = google_secret_manager_secret.tunnel_cname_secret.name
+  secret_data = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
+
+  # Ensure this only runs after the secret slot is created
+  depends_on = [
+    google_secret_manager_secret.tunnel_cname_secret
   ]
 }

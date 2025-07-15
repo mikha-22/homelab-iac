@@ -48,7 +48,7 @@ resource "google_project_service" "iam" {
   disable_on_destroy         = false
 }
 
-# --- SECRET MANAGER SECRETS ---
+# --- SECRET MANAGER SECRETS (from .tfvars) ---
 resource "google_secret_manager_secret" "homelab_secrets" {
   # Use the merged local map instead of the variable directly.
   for_each = local.all_secrets
@@ -103,4 +103,33 @@ resource "google_project_iam_member" "external_secrets_token_creator" {
 resource "google_service_account_key" "external_secrets_key" {
   service_account_id = google_service_account.external_secrets.name
   public_key_type    = "TYPE_X509_PEM_FILE"
+}
+
+# ===================================================================
+#  NEW: Automatically store the generated service account key
+# ===================================================================
+
+# Create a dedicated secret "slot" for the service account key
+resource "google_secret_manager_secret" "eso_service_account_key" {
+  secret_id = "external-secrets-service-account-key"
+
+  labels = {
+    environment = "homelab"
+    managed_by  = "terraform"
+    component   = "secrets"
+    automation  = "self-managed"
+  }
+
+  replication {
+    auto {}
+  }
+
+  # Make sure the service account exists before creating this
+  depends_on = [google_service_account.external_secrets]
+}
+
+# Populate the secret with the private key from the generated key resource
+resource "google_secret_manager_secret_version" "eso_service_account_key_version" {
+  secret      = google_secret_manager_secret.eso_service_account_key.id
+  secret_data = base64decode(google_service_account_key.external_secrets_key.private_key)
 }
