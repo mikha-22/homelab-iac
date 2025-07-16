@@ -12,7 +12,7 @@ output "deployment_status" {
       }
       
       cluster_store = {
-        name         = kubernetes_manifest.cluster_secret_store.manifest.metadata.name
+        name         = var.cluster_secret_store_name
         provider     = "gcpsm"
         project_id   = module.shared.gcp_project_id
       }
@@ -43,23 +43,23 @@ output "deployment_status" {
       {
         action      = "Test secret synchronization"
         description = "Create a test ExternalSecret to verify functionality"
-        command     = "kubectl apply -f - <<EOF\napiVersion: external-secrets.io/v1beta1\nkind: ExternalSecret\nmetadata:\n  name: test-secret\n  namespace: default\nspec:\n  refreshInterval: 1h\n  secretStoreRef:\n    name: ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}\n    kind: ClusterSecretStore\n  target:\n    name: test-gcp-secret\n    creationPolicy: Owner\n  data:\n  - secretKey: password\n    remoteRef:\n      key: argocd-admin-password\nEOF"
+        command     = "kubectl apply -f - <<EOF\napiVersion: external-secrets.io/v1beta1\nkind: ExternalSecret\nmetadata:\n  name: test-secret\n  namespace: default\nspec:\n  refreshInterval: 1h\n  secretStoreRef:\n    name: ${var.cluster_secret_store_name}\n    kind: ClusterSecretStore\n  target:\n    name: test-gcp-secret\n    creationPolicy: Owner\n  data:\n  - secretKey: password\n    remoteRef:\n      key: argocd-admin-password\nEOF"
       },
       {
         action      = "Deploy applications with secrets"
         description = "Applications can now reference secrets from GCP Secret Manager"
-        command     = "# Use ClusterSecretStore: ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}"
+        command     = "# Use ClusterSecretStore: ${var.cluster_secret_store_name}"
       }
     ]
     
     troubleshooting = {
       check_eso_pods    = "kubectl get pods -n ${kubernetes_namespace.external_secrets.metadata[0].name}"
-      check_store       = "kubectl get clustersecretstore ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}"
-      describe_store    = "kubectl describe clustersecretstore ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}"
+      check_store       = "kubectl get clustersecretstore ${var.cluster_secret_store_name}"
+      describe_store    = "kubectl describe clustersecretstore ${var.cluster_secret_store_name}"
       check_crds        = "kubectl get crd | grep external-secrets"
       controller_logs   = "kubectl logs -n ${kubernetes_namespace.external_secrets.metadata[0].name} -l app.kubernetes.io/name=external-secrets"
       webhook_logs      = "kubectl logs -n ${kubernetes_namespace.external_secrets.metadata[0].name} -l app.kubernetes.io/name=external-secrets-webhook"
-      test_auth         = "kubectl get clustersecretstore ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")]}'"
+      test_auth         = "kubectl get clustersecretstore ${var.cluster_secret_store_name} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")]}'"
     }
   }
 }
@@ -72,7 +72,7 @@ output "external_secrets_namespace" {
 
 output "cluster_secret_store_name" {
   description = "Name of the ClusterSecretStore for referencing in ExternalSecret resources"
-  value       = kubernetes_manifest.cluster_secret_store.manifest.metadata.name
+  value       = var.cluster_secret_store_name
 }
 
 output "external_secrets_chart_version" {
@@ -93,7 +93,7 @@ output "success_message" {
     Configuration:
     ✅ Repository: https://external-secrets.io
     ✅ API Version: external-secrets.io/v1beta1
-    ✅ ClusterSecretStore: ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}
+    ✅ ClusterSecretStore: ${var.cluster_secret_store_name}
     
     Available secrets in GCP Secret Manager:
     - argocd-admin-password
@@ -119,8 +119,8 @@ output "verification_commands" {
     kubectl get all -n ${kubernetes_namespace.external_secrets.metadata[0].name}
     
     # Check ClusterSecretStore
-    kubectl get clustersecretstore ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}
-    kubectl describe clustersecretstore ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}
+    kubectl get clustersecretstore ${var.cluster_secret_store_name}
+    kubectl describe clustersecretstore ${var.cluster_secret_store_name}
     
     # Check CRDs are installed
     kubectl get crd | grep external-secrets
@@ -135,7 +135,7 @@ output "verification_commands" {
     spec:
       refreshInterval: 1h
       secretStoreRef:
-        name: ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}
+        name: ${var.cluster_secret_store_name}
         kind: ClusterSecretStore
       target:
         name: test-gcp-secret
@@ -152,10 +152,10 @@ output "quick_reference" {
   description = "Quick commands for immediate use"
   value = {
     namespace              = kubernetes_namespace.external_secrets.metadata[0].name
-    cluster_secret_store   = kubernetes_manifest.cluster_secret_store.manifest.metadata.name
+    cluster_secret_store   = var.cluster_secret_store_name
     check_pods            = "kubectl get pods -n ${kubernetes_namespace.external_secrets.metadata[0].name}"
-    check_store_status    = "kubectl get clustersecretstore ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}"
+    check_store_status    = "kubectl get clustersecretstore ${var.cluster_secret_store_name}"
     project_id            = module.shared.gcp_project_id
-    example_external_secret = "Use secretStoreRef.name: ${kubernetes_manifest.cluster_secret_store.manifest.metadata.name}"
+    example_external_secret = "Use secretStoreRef.name: ${var.cluster_secret_store_name}"
   }
 }

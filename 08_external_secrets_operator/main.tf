@@ -1,11 +1,10 @@
 # ===================================================================
-#  EXTERNAL SECRETS OPERATOR - MAIN CONFIGURATION
+#  EXTERNAL SECRETS OPERATOR - SIMPLIFIED VERSION
 # ===================================================================
 
 # --- IMPORT SHARED CONFIGURATION ---
 module "shared" {
   source = "../shared"
-  # ADD THIS PROVIDERS BLOCK TO FIX THE "project: required" ERROR
   providers = {
     google = google.primary
   }
@@ -24,36 +23,6 @@ resource "kubernetes_namespace" "external_secrets" {
   }
 }
 
-# --- INSTALL CRDS FIRST ---
-resource "null_resource" "install_crds" {
-  depends_on = [kubernetes_namespace.external_secrets]
-
-  triggers = {
-    eso_version = var.eso_chart_version
-    namespace   = kubernetes_namespace.external_secrets.metadata[0].name
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -euo pipefail
-      echo "🔧 Installing External Secrets Operator CRDs..."
-      kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/v${var.eso_chart_version}/deploy/crds/bundle.yaml
-      echo "⏳ Waiting for CRDs to be established..."
-      kubectl wait --for condition=established --timeout=60s crd/externalsecrets.external-secrets.io
-      kubectl wait --for condition=established --timeout=60s crd/secretstores.external-secrets.io
-      kubectl wait --for condition=established --timeout=60s crd/clustersecretstores.external-secrets.io
-      echo "✅ CRDs installed and established"
-    EOT
-  }
-}
-
-# --- WAIT FOR CRDS TO BE RECOGNIZED ---
-resource "time_sleep" "wait_for_crds" {
-  provider   = time.scheduling
-  depends_on = [null_resource.install_crds]
-  create_duration = "30s"
-}
-
 # --- DEPLOY ESO HELM CHART ---
 resource "helm_release" "external_secrets" {
   provider = helm.k3s_apps
@@ -67,12 +36,17 @@ resource "helm_release" "external_secrets" {
 
   set {
     name  = "installCRDs"
-    value = "false"
+    value = "true"
+  }
+
+  set {
+    name  = "replicaCount"
+    value = local.eso_config.replicas
   }
 
   wait = true
   depends_on = [
-    time_sleep.wait_for_crds
+    kubernetes_namespace.external_secrets
   ]
 }
 
@@ -90,45 +64,73 @@ resource "kubernetes_secret" "gcp_service_account" {
   }
 
   type = "Opaque"
+  
+  depends_on = [
+    kubernetes_namespace.external_secrets
+  ]
 }
 
-# --- WAIT FOR ESO TO BE READY BEFORE CREATING THE STORE ---
-resource "time_sleep" "wait_for_eso" {
+# --- WAIT FOR ESO TO BE READY ---
+resource "time_sleep" "wait_for_eso_ready" {
   provider   = time.scheduling
   depends_on = [helm_release.external_secrets]
-  create_duration = "60s"
+  create_duration = "120s"
 }
 
-# --- CREATE CLUSTERSECRETSTORE ---
-resource "kubernetes_manifest" "cluster_secret_store" {
-  provider = kubernetes.k3s_cluster
-  
-  manifest = {
-    apiVersion = "external-secrets.io/v1beta1"
-    kind       = "ClusterSecretStore"
-    metadata = {
-      name = var.cluster_secret_store_name
-    }
-    spec = {
-      provider = {
-        gcpsm = {
-          projectID = module.shared.gcp_project_id
-          auth = {
-            secretRef = {
-              secretAccessKeySecretRef = {
-                name      = kubernetes_secret.gcp_service_account.metadata[0].name
-                key       = "credentials.json"
-                namespace = kubernetes_namespace.external_secrets.metadata[0].name
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
+# --- CREATE CLUSTERSECRETSTORE USING KUBECTL ---
+resource "null_resource" "cluster_secret_store" {
   depends_on = [
-    time_sleep.wait_for_eso,
+    time_sleep.wait_for_eso_ready,
     kubernetes_secret.gcp_service_account
   ]
+
+  triggers = {
+    store_name = var.cluster_secret_store_name
+    project_id = module.shared.gcp_project_id
+    secret_name = kubernetes_secret.gcp_service_account.metadata[0].name
+    namespace = kubernetes_namespace.external_secrets.metadata[0].name
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command = <<-EOT
+      echo "🔧 Creating ClusterSecretStore using kubectl..."
+      
+      # Create temporary YAML file
+      cat > /tmp/cluster-secret-store.yaml << 'EOF'
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: ${var.cluster_secret_store_name}
+spec:
+  provider:
+    gcpsm:
+      projectID: "${module.shared.gcp_project_id}"
+      auth:
+        secretRef:
+          secretAccessKeySecretRef:
+            name: "${kubernetes_secret.gcp_service_account.metadata[0].name}"
+            key: "credentials.json"
+            namespace: "${kubernetes_namespace.external_secrets.metadata[0].name}"
+EOF
+      
+      # Apply the ClusterSecretStore
+      kubectl apply -f /tmp/cluster-secret-store.yaml
+      
+      # Clean up
+      rm -f /tmp/cluster-secret-store.yaml
+      
+      echo "✅ ClusterSecretStore ${var.cluster_secret_store_name} created successfully"
+    EOT
+  }
+
+  provisioner "local-exec" {
+    when = destroy
+    interpreter = ["/bin/bash", "-c"]
+    command = <<-EOT
+      echo "🧹 Removing ClusterSecretStore..."
+      kubectl delete clustersecretstore ${self.triggers.store_name} --ignore-not-found=true || true
+      echo "✅ ClusterSecretStore cleanup complete"
+    EOT
+  }
 }
