@@ -17,6 +17,14 @@ output "authentication" {
   }
 }
 
+output "cluster_secret_store" {
+  description = "ClusterSecretStore resource information"
+  value = {
+    name   = kubernetes_manifest.cluster_secret_store.manifest.metadata.name
+    ready  = "kubectl get clustersecretstore ${var.cluster_secret_store_name} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
+  }
+}
+
 output "usage_example" {
   description = "How to use ESO in applications"
   value = {
