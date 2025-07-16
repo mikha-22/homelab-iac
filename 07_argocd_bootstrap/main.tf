@@ -41,7 +41,6 @@ resource "helm_release" "argocd" {
     file("${path.module}/values/argocd-values.yaml")
   ]
 
-  # Set admin password from Secret Manager (Helm 3.0 syntax)
   set_sensitive = [
     {
       name  = "configs.secret.argocdServerAdminPassword"
@@ -73,7 +72,7 @@ resource "helm_release" "argocd" {
   timeout       = 900
 }
 
-# --- ARGOCD INGRESS WITH TUNNEL INTEGRATION ---
+# --- FINAL CORRECTED ARGOCD INGRESS ---
 resource "kubernetes_ingress_v1" "argocd_ingress" {
   provider = kubernetes.k3s_cluster
 
@@ -86,17 +85,23 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
       "app.kubernetes.io/part-of"   = "argocd"
     }
     annotations = {
+      # This annotation is kept for backward compatibility and for some tools that might still look for it.
       "kubernetes.io/ingress.class"                         = "traefik"
+      
+      # These annotations correctly configure ExternalDNS to manage the Cloudflare DNS record.
       "external-dns.alpha.kubernetes.io/target"            = trimspace(data.google_secret_manager_secret_version.tunnel_cname.secret_data)
       "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true"
-      # ArgoCD specific annotations
+      
+      # This annotation provides a hint to Traefik to enable TLS routing.
       "traefik.ingress.kubernetes.io/router.tls"           = "true"
-      "nginx.ingress.kubernetes.io/backend-protocol"       = "HTTP"
-      "nginx.ingress.kubernetes.io/server-snippet"         = "grpc_read_timeout 300; grpc_send_timeout 300;"
     }
   }
 
   spec {
+    # This is the modern, required field that explicitly tells the K3s Traefik controller to handle this Ingress.
+    # This is the direct fix for the "404 page not found" error.
+    ingress_class_name = "traefik"
+
     rule {
       host = local.argocd_hostname
       http {
@@ -134,7 +139,9 @@ resource "null_resource" "verify_argocd_deployment" {
   }
 
   provisioner "local-exec" {
+    # Use bash interpreter to ensure script commands like 'pipefail' work correctly.
     interpreter = ["/bin/bash", "-c"]
+    # This resilient script checks for all components created by the ArgoCD Helm release using labels.
     command = <<-EOT
       set -euo pipefail
       
