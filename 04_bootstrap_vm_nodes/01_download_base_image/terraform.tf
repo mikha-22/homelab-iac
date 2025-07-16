@@ -3,17 +3,18 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "03_nas/01_base_images"  # ✅ Fixed to match directory structure
+    prefix = "04_bootstrap_vm_nodes/01_download_base_image"
   }
   
   required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.70.1"
-    }
     google = {
       source  = "hashicorp/google"
       version = "~> 6.0"
+    }
+    
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "~> 0.70.1"
     }
   }
 }

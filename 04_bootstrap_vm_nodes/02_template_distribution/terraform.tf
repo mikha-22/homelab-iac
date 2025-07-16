@@ -3,20 +3,10 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "03_nas/02_nas_vm"
+    prefix = "04_bootstrap_vm_nodes/02_template_distribution"  # Fixed: Updated path
   }
   
   required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 6.0"
-    }
-    
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.70.1"
-    }
-    
     null = {
       source  = "hashicorp/null"
       version = "~> 3.2"

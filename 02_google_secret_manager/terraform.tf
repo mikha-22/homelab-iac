@@ -3,7 +3,7 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "01_google_secret_manager"
+    prefix = "02_google_secret_manager"  # ✅ Fixed to match directory name
   }
   
   required_providers {

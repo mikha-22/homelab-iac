@@ -1,6 +1,7 @@
 # ===================================================================
 #  PROJECT: Google Secret Manager for Homelab
 #  Creates Secret Manager secrets and service account for ESO integration
+#  UPDATED: Handle SSH key file reading in main.tf
 # ===================================================================
 
 # --- DATA SOURCES ---
@@ -9,25 +10,24 @@ data "google_project" "current" {
 }
 
 # --- LOCALS ---
-# Merge the static secrets from the tfvars file with the dynamic SSH key secrets.
-# This allows us to manage all secrets with a single, clean for_each loop.
+# Read SSH key file in main.tf, not tfvars
 locals {
   all_secrets = merge(
     var.secrets,
     
-    # Conditionally add the user SSH key secret if a path is provided.
+    # Add the user SSH key secret if a path is provided
     var.ssh_public_key_path != "" ? {
       "nas-vm-ssh-key" = {
         secret_data = file(var.ssh_public_key_path)
-        description = "Public SSH key for general VM user access, managed by Terraform."
+        description = "Public SSH key for all VM user access, managed by Terraform."
       }
     } : {},
-
-    # Conditionally add the Packer SSH key secret if a path is provided.
-    var.packer_public_key_path != "" ? {
-      "packer-vm-ssh-key-public" = {
-        secret_data = file(var.packer_public_key_path)
-        description = "Public SSH key for Packer automation to provision VM templates."
+    
+    # NEW: Handle Proxmox SSH private key
+    var.proxmox_ssh_private_key_path != "" ? {
+      "proxmox-ssh-private-key" = {
+        secret_data = file(var.proxmox_ssh_private_key_path)
+        description = "Proxmox SSH private key for Terraform authentication"
       }
     } : {}
   )
@@ -50,7 +50,6 @@ resource "google_project_service" "iam" {
 
 # --- SECRET MANAGER SECRETS (from .tfvars) ---
 resource "google_secret_manager_secret" "homelab_secrets" {
-  # Use the merged local map instead of the variable directly.
   for_each = local.all_secrets
 
   secret_id = each.key
@@ -69,7 +68,6 @@ resource "google_secret_manager_secret" "homelab_secrets" {
 }
 
 resource "google_secret_manager_secret_version" "homelab_secret_versions" {
-  # Use the merged local map here as well.
   for_each = local.all_secrets
 
   secret      = google_secret_manager_secret.homelab_secrets[each.key].name
@@ -106,7 +104,7 @@ resource "google_service_account_key" "external_secrets_key" {
 }
 
 # ===================================================================
-#  NEW: Automatically store the generated service account key
+#  Automatically store the generated service account key
 # ===================================================================
 
 # Create a dedicated secret "slot" for the service account key
@@ -124,7 +122,6 @@ resource "google_secret_manager_secret" "eso_service_account_key" {
     auto {}
   }
 
-  # Make sure the service account exists before creating this
   depends_on = [google_service_account.external_secrets]
 }
 

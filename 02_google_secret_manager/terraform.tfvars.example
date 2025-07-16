@@ -13,14 +13,25 @@ k8s_cluster_name = "homelab-k3s"
 # Namespace where External Secrets Operator will be deployed
 k8s_namespace = "external-secrets"
 
-# Path to your public SSH key for general VM access
+# Path to your public SSH key for VM access (used for all VMs)
 ssh_public_key_path = "~/.ssh/id_rsa.pub"
 
-# Path to your public SSH key for Packer automation
-packer_public_key_path = "~/.ssh/packer_key.pub"
+# REMOVED: packer_public_key_path - no longer needed since we removed Packer!
+# All VMs now use the same SSH key for simplicity and reliability
 
 # Secrets to create in Google Secret Manager
 secrets = {
+  # Infrastructure secrets
+  "proxmox-api-token" = {
+    secret_data = "your-proxmox-api-token"
+    description = "Proxmox API token for infrastructure automation"
+  }
+  
+  "proxmox-ssh-password" = {
+    secret_data = "your-proxmox-root-password"
+    description = "Proxmox root password for SSH access"
+  }
+  
   # ArgoCD admin password
   "argocd-admin-password" = {
     secret_data = "your-secure-argocd-password"
@@ -38,16 +49,15 @@ secrets = {
     description = "MinIO root password"
   }
   
-  # Cloudflare API token for External DNS
+  # Cloudflare credentials
   "cloudflare-api-token" = {
     secret_data = "your-cloudflare-api-token"
     description = "Cloudflare API token for External DNS"
   }
   
-  # GitHub Actions runner token (if using self-hosted runners)
-  "github-runner-token" = {
-    secret_data = "your-github-runner-token"
-    description = "GitHub Actions runner registration token"
+  "cloudflare-account-id" = {
+    secret_data = "your-cloudflare-account-id"
+    description = "Cloudflare account ID for tunnel creation"
   }
   
   # Database credentials (if you add a database later)
@@ -60,5 +70,11 @@ secrets = {
   "grafana-admin-password" = {
     secret_data = "your-secure-grafana-password"
     description = "Grafana admin password"
+  }
+  
+  # GitHub Actions runner token (if using self-hosted runners)
+  "github-runner-token" = {
+    secret_data = "your-github-runner-token"
+    description = "GitHub Actions runner registration token"
   }
 }

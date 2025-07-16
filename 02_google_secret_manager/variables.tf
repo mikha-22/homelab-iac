@@ -36,8 +36,9 @@ variable "ssh_public_key_path" {
   default     = "~/.ssh/id_rsa.pub"
 }
 
-variable "packer_public_key_path" {
-  description = "Path to the public SSH key that Packer will use to provision templates."
+# NEW: Add variable for Proxmox SSH private key path
+variable "proxmox_ssh_private_key_path" {
+  description = "Path to the Proxmox SSH private key file."
   type        = string
-  default     = "~/.ssh/packer_key.pub"
+  default     = "~/.ssh/proxmox_terraform"
 }

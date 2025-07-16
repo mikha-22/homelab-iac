@@ -3,7 +3,7 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "03_nas/02_nas_vm"
+    prefix = "04_bootstrap_vm_nodes/03_deploy_vm"
   }
   
   required_providers {
@@ -20,6 +20,11 @@ terraform {
     null = {
       source  = "hashicorp/null"
       version = "~> 3.2"
+    }
+    
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.4"
     }
   }
 }

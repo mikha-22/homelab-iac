@@ -1,7 +1,15 @@
 # ===================================================================
-#  NAS VM PROVIDERS - Required provider configurations
-#  FIXED: Uses correct data source references that match main.tf
+#  K3S VM DEPLOYMENT PROVIDERS
 # ===================================================================
+
+# Data sources for authentication
+data "google_secret_manager_secret_version" "pm_api_token" {
+  secret = "proxmox-api-token"
+}
+
+data "google_secret_manager_secret_version" "pm_ssh_private_key" {
+  secret = "proxmox-ssh-private-key"
+}
 
 # --- PROVIDER CONFIGURATIONS ---
 provider "google" {
@@ -21,3 +29,5 @@ provider "proxmox" {
 }
 
 provider "null" {}
+
+provider "local" {}
