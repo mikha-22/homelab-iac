@@ -1,27 +1,17 @@
 # ===================================================================
-#  CLOUDFLARE TUNNEL - FULLY CORRECTED CONFIGURATION
-#
-#  This file includes two critical fixes:
-#  1. Correctly configures the ExternalDNS Helm deployment to use a
-#     Kubernetes secret for the API token.
-#  2. Adds logic to create and populate the 'tunnel-cname' secret
-#     in Google Secret Manager for the ArgoCD module to consume.
+#  CLOUDFLARE TUNNEL - CLEAN CONFIGURATION
 # ===================================================================
 
-# --- IMPORT SHARED MODULE ---
 module "shared" {
   source = "../shared"
 }
 
-# --- TUNNEL SECRET ---
 resource "random_password" "tunnel_secret" {
   provider = random.generation
-
   length  = 35
   special = false
 }
 
-# --- CLOUDFLARE TUNNEL ---
 resource "cloudflare_zero_trust_tunnel_cloudflared" "k3s_tunnel" {
   provider = cloudflare.dns_tunnels
 
@@ -31,7 +21,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "k3s_tunnel" {
   config_src = "cloudflare"
 }
 
-# --- TUNNEL CONFIG ---
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
   provider = cloudflare.dns_tunnels
 
@@ -55,7 +44,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
   }
 }
 
-# --- KUBERNETES NAMESPACES ---
 resource "kubernetes_namespace" "cloudflared" {
   provider = kubernetes.k3s_cluster
 
@@ -78,8 +66,6 @@ resource "kubernetes_namespace" "external_dns" {
   }
 }
 
-# --- CORRECTED: SECRET FOR EXTERNALDNS API TOKEN ---
-# Create a Kubernetes secret to hold the Cloudflare API token.
 resource "kubernetes_secret" "cloudflare_api_token_secret" {
   provider = kubernetes.k3s_cluster
 
@@ -93,8 +79,6 @@ resource "kubernetes_secret" "cloudflare_api_token_secret" {
   }
 }
 
-# --- CORRECTED: EXTERNAL DNS HELM RELEASE ---
-# This resource is now configured to use the Kubernetes secret for authentication.
 resource "helm_release" "external_dns" {
   provider = helm.k3s_apps
 
@@ -132,7 +116,6 @@ resource "helm_release" "external_dns" {
   ]
 }
 
-# --- CLOUDFLARED DEPLOYMENT ---
 resource "kubernetes_secret" "tunnel_credentials" {
   provider = kubernetes.k3s_cluster
 
@@ -187,11 +170,7 @@ resource "kubernetes_deployment" "cloudflared" {
   }
 }
 
-# =================================================================
-#  NEW: STORE TUNNEL CNAME IN SECRET MANAGER FOR OTHER MODULES
-# =================================================================
-
-# Create a secret "slot" for the tunnel CNAME
+# Store tunnel CNAME in Secret Manager for other modules
 resource "google_secret_manager_secret" "tunnel_cname_secret" {
   secret_id = "tunnel-cname"
 
@@ -206,12 +185,10 @@ resource "google_secret_manager_secret" "tunnel_cname_secret" {
   }
 }
 
-# Populate the secret with the actual CNAME value from the created tunnel
 resource "google_secret_manager_secret_version" "tunnel_cname_secret_version" {
   secret      = google_secret_manager_secret.tunnel_cname_secret.name
   secret_data = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
 
-  # Ensure this only runs after the secret slot is created
   depends_on = [
     google_secret_manager_secret.tunnel_cname_secret
   ]

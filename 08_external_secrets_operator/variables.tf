@@ -1,72 +1,41 @@
 # ===================================================================
-#  EXTERNAL SECRETS OPERATOR VARIABLES - UPDATED WITH SHARED CONFIG
-#  GCP project ID now comes from shared configuration
+#  EXTERNAL SECRETS OPERATOR VARIABLES - SIMPLIFIED
 # ===================================================================
 
 variable "kubeconfig_path" {
   description = "Path to kubeconfig file"
   type        = string
   default     = "~/.kube/config"
-  
-  validation {
-    condition     = can(regex("^[/~].*", var.kubeconfig_path))
-    error_message = "Kubeconfig path must be an absolute path or start with ~."
-  }
 }
 
 variable "eso_namespace" {
   description = "Namespace for External Secrets Operator"
   type        = string
   default     = "external-secrets"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.eso_namespace))
-    error_message = "Namespace must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "eso_chart_version" {
   description = "External Secrets Operator Helm chart version"
   type        = string
   default     = "0.15.1"
-  
-  validation {
-    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.eso_chart_version))
-    error_message = "Chart version must be in semantic version format (e.g., 0.15.1)."
-  }
 }
 
 variable "service_account_secret_name" {
   description = "Name of the secret in GCP Secret Manager containing the service account key"
   type        = string
   default     = "external-secrets-service-account-key"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.service_account_secret_name))
-    error_message = "Secret name must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "service_account_secret_k8s_name" {
   description = "Name of the Kubernetes secret that will contain the service account key"
   type        = string
   default     = "gcp-secret-manager-sa"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.service_account_secret_k8s_name))
-    error_message = "Kubernetes secret name must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "cluster_secret_store_name" {
   description = "Name of the ClusterSecretStore resource"
   type        = string
   default     = "gcp-secret-manager"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.cluster_secret_store_name))
-    error_message = "ClusterSecretStore name must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "enable_monitoring" {
@@ -164,7 +133,6 @@ variable "metrics_port" {
 
 # --- COMPUTED VALUES ---
 locals {
-  # Final resource configuration
   final_resource_limits = {
     controller = merge(
       {
@@ -195,7 +163,6 @@ locals {
     )
   }
   
-  # ESO configuration
   eso_config = {
     namespace           = var.eso_namespace
     chart_version       = var.eso_chart_version

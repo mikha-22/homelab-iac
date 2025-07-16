@@ -1,14 +1,11 @@
 # ===================================================================
-#  NAS VM - USING SHARED CONFIGURATION WITH AUTOMATIC STORAGE REGISTRATION
-#  FIXED: Now includes all required data sources and storage registration
+#  NAS VM - CLEAN CONFIGURATION
 # ===================================================================
 
-# --- IMPORT SHARED MODULE ---
 module "shared" {
   source = "../../shared"
 }
 
-# --- DATA SOURCES FOR AUTHENTICATION (REQUIRED BY PROVIDERS) ---
 data "google_secret_manager_secret_version" "pm_api_token" {
   secret = "proxmox-api-token"
 }
@@ -17,7 +14,6 @@ data "google_secret_manager_secret_version" "pm_ssh_private_key" {
   secret = "proxmox-ssh-private-key"
 }
 
-# --- GET BASE IMAGE ---
 data "terraform_remote_state" "images" {
   backend = "gcs"
   config = {
@@ -26,14 +22,12 @@ data "terraform_remote_state" "images" {
   }
 }
 
-# --- CLOUD-INIT TEMPLATE ---
 locals {
   nas_cloud_init_content = templatefile("${path.module}/nas-cloud-init.yaml", {
     ssh_public_key = module.shared.nas_ssh_public_key
   })
 }
 
-# --- CLOUD-INIT FILE ---
 resource "proxmox_virtual_environment_file" "nas_cloud_init" {
   content_type = "snippets"
   datastore_id = "local"
@@ -45,7 +39,6 @@ resource "proxmox_virtual_environment_file" "nas_cloud_init" {
   }
 }
 
-# --- NAS VM ---
 resource "proxmox_virtual_environment_vm" "nfs_server" {
   name        = "nfs-server-01"
   description = "NFS server for Proxmox cluster shared storage"
@@ -99,21 +92,18 @@ resource "proxmox_virtual_environment_vm" "nfs_server" {
   }
 }
 
-# --- REGISTER THE NFS STORAGE IN PROXMOX (RESTORED FROM OLD CODE) ---
 resource "null_resource" "register_nfs_storage" {
   depends_on = [proxmox_virtual_environment_vm.nfs_server]
 
   triggers = {
     vm_id = proxmox_virtual_environment_vm.nfs_server.id
     nas_ip = module.shared.network.nas_server
-    # Store SSH private key in triggers for destroy-time access
     proxmox_ssh_key = sensitive(trimspace(data.google_secret_manager_secret_version.pm_ssh_private_key.secret_data))
   }
 
-  # Wait for VM to boot and NFS to start
   provisioner "local-exec" {
     command = <<-EOT
-      echo "⏳ Waiting for NAS VM to boot and NFS service to start..."
+      echo "Waiting for NAS VM to boot and NFS service to start..."
       timeout 120 bash -c '
         while ! ping -c 1 ${module.shared.network.nas_server} >/dev/null 2>&1; do 
           echo "  Waiting for ${module.shared.network.nas_server}..."
@@ -121,79 +111,68 @@ resource "null_resource" "register_nfs_storage" {
         done
       '
       
-      echo "⏳ Waiting additional 30 seconds for NFS service to be ready..."
+      echo "Waiting additional 30 seconds for NFS service to be ready..."
       sleep 30
       
-      echo "✅ NAS VM is ready at ${module.shared.network.nas_server}"
+      echo "NAS VM is ready at ${module.shared.network.nas_server}"
     EOT
   }
 
-  # Register NFS storage in Proxmox cluster using SSH key from Secret Manager
   provisioner "local-exec" {
     environment = {
       SSH_KEY_CONTENT = self.triggers.proxmox_ssh_key
     }
     command = <<-EOT
-      echo "🔧 Registering NFS storage in Proxmox cluster..."
+      echo "Registering NFS storage in Proxmox cluster..."
       
-      # Create temporary SSH key file
       TMP_KEY=$(mktemp)
       echo "$SSH_KEY_CONTENT" > "$TMP_KEY"
       chmod 600 "$TMP_KEY"
       
-      # Create mount points on both nodes
       for node in pve1.local pve2.local; do
         echo "  Creating mount point on $node..."
         ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$TMP_KEY" "root@$node" \
           "mkdir -p /mnt/pve/cluster-shared-nfs" || echo "  Mount point already exists on $node"
       done
       
-      # Add NFS storage to Proxmox
       echo "  Adding NFS storage configuration..."
       ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$TMP_KEY" "root@pve1.local" \
         "pvesm add nfs cluster-shared-nfs --path /mnt/pve/cluster-shared-nfs --server ${module.shared.network.nas_server} --export /export/proxmox-storage --content images,iso,vztmpl,snippets,backup,rootdir --nodes pve1,pve2" || echo "  NFS storage already exists"
       
-      # Clean up temporary key file
       rm -f "$TMP_KEY"
       
-      echo "✅ NFS storage 'cluster-shared-nfs' registered successfully"
+      echo "NFS storage 'cluster-shared-nfs' registered successfully"
     EOT
   }
 
-  # Cleanup NFS storage on destroy
   provisioner "local-exec" {
     when = destroy
     environment = {
       SSH_KEY_CONTENT = self.triggers.proxmox_ssh_key
     }
     command = <<-EOT
-      echo "🧹 Removing NFS storage from Proxmox cluster..."
+      echo "Removing NFS storage from Proxmox cluster..."
       
-      # Create temporary SSH key file
       TMP_KEY=$(mktemp)
       echo "$SSH_KEY_CONTENT" > "$TMP_KEY"
       chmod 600 "$TMP_KEY"
       
-      # Remove NFS storage configuration
       ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$TMP_KEY" "root@pve1.local" \
         "if pvesm status | grep -q '^cluster-shared-nfs '; then pvesm remove cluster-shared-nfs; fi" || echo "  NFS storage already removed"
       
-      # Unmount and remove mount points
       for node in pve1.local pve2.local; do
         echo "  Cleaning up mount point on $node..."
         ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$TMP_KEY" "root@$node" \
           "umount -l /mnt/pve/cluster-shared-nfs 2>/dev/null || true; rmdir /mnt/pve/cluster-shared-nfs 2>/dev/null || true" || echo "  Cleanup completed on $node"
       done
       
-      # Clean up temporary key file
       rm -f "$TMP_KEY"
       
-      echo "✅ NFS storage cleanup completed"
+      echo "NFS storage cleanup completed"
     EOT
   }
 }
 
-# --- CONNECTIVITY VERIFICATION ---
 resource "null_resource" "verify_nas_connectivity" {
   depends_on = [
     proxmox_virtual_environment_vm.nfs_server,
@@ -208,10 +187,9 @@ resource "null_resource" "verify_nas_connectivity" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "🔍 Verifying NAS connectivity and NFS exports..."
+      echo "Verifying NAS connectivity and NFS exports..."
       
-      # Test NFS exports are available
-      echo "⏳ Testing NFS exports..."
+      echo "Testing NFS exports..."
       timeout 60 bash -c '
         while ! showmount -e ${module.shared.network.nas_server} >/dev/null 2>&1; do
           echo "  Waiting for NFS exports..."
@@ -219,10 +197,10 @@ resource "null_resource" "verify_nas_connectivity" {
         done
       '
       
-      echo "✅ NFS exports are available:"
+      echo "NFS exports are available:"
       showmount -e ${module.shared.network.nas_server}
       
-      echo "🎉 NAS VM and storage registration complete!"
+      echo "NAS VM and storage registration complete"
     EOT
   }
 }

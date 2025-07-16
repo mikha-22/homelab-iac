@@ -1,14 +1,6 @@
-variable "ssh_key_path" {
-  description = "Path to SSH private key for Proxmox authentication"
-  type        = string
-  default     = "~/.ssh/proxmox_terraform"  # Updated to match our new key
-}
-
-variable "source_template_id" {
-  description = "Source template ID on pve1 (the base template created in step 1)"
-  type        = number
-  default     = 9999  # Base template
-}
+# ===================================================================
+#  TEMPLATE DISTRIBUTION VARIABLES - SIMPLIFIED
+# ===================================================================
 
 variable "source_template_name" {
   description = "Name of the source template"
@@ -24,17 +16,27 @@ variable "target_nodes" {
   }))
   default = [
     {
-      node        = "pve1"  # Create template 9000 on pve1 for master
+      node        = "pve1"
       template_id = 9000
     },
     {
-      node        = "pve2"  # Create template 9010 on pve2 for worker
+      node        = "pve2"
       template_id = 9010
     }
   ]
-}
-
-# Add missing local for SSH options
-locals {
-  ssh_opts = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.ssh_key_path}"
+  
+  validation {
+    condition = alltrue([
+      for target in var.target_nodes :
+      target.template_id >= 100 && target.template_id <= 9999
+    ])
+    error_message = "Template IDs must be between 100 and 9999."
+  }
+  
+  validation {
+    condition = length(var.target_nodes) == length(toset([
+      for target in var.target_nodes : target.template_id
+    ]))
+    error_message = "Template IDs must be unique."
+  }
 }

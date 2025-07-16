@@ -1,14 +1,11 @@
 # ===================================================================
-#  K3S VM DEPLOYMENT - USING CENTRALIZED PROVIDERS
-#  FIXED: Use correct template IDs based on target node
+#  K3S VM DEPLOYMENT - CLEAN VERSION
 # ===================================================================
 
-# --- IMPORT SHARED MODULE (FIXED PATH) ---
 module "shared" {
-  source = "../../shared"  # Fixed: was ../../../shared
+  source = "../../shared"
 }
 
-# --- GET BASE TEMPLATE ---
 data "terraform_remote_state" "base_template" {
   backend = "gcs"
   config = {
@@ -17,7 +14,6 @@ data "terraform_remote_state" "base_template" {
   }
 }
 
-# --- CLOUD-INIT TEMPLATES ---
 locals {
   master_init_content = templatefile("${path.module}/master-init.yaml", {
     user_ssh_public_key = module.shared.nas_ssh_public_key
@@ -27,7 +23,6 @@ locals {
   })
 }
 
-# --- CLOUD-INIT FILES ---
 resource "proxmox_virtual_environment_file" "master_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -50,7 +45,6 @@ resource "proxmox_virtual_environment_file" "worker_cloud_init" {
   }
 }
 
-# --- MASTER VM ---
 resource "proxmox_virtual_environment_vm" "master" {
   name      = "dev-k3s-master-01"
   node_name = "pve1"
@@ -60,7 +54,7 @@ resource "proxmox_virtual_environment_vm" "master" {
   depends_on = [proxmox_virtual_environment_file.master_cloud_init]
 
   clone {
-    vm_id        = 9000  # Use template 9000 on pve1 (distributed template)
+    vm_id        = 9000
     full         = true
     datastore_id = "cluster-shared-nfs"
   }
@@ -86,7 +80,6 @@ resource "proxmox_virtual_environment_vm" "master" {
   }
 }
 
-# --- WORKER VM ---
 resource "proxmox_virtual_environment_vm" "worker" {
   name      = "dev-k3s-worker-01"
   node_name = "pve2"
@@ -96,7 +89,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
   depends_on = [proxmox_virtual_environment_file.worker_cloud_init]
 
   clone {
-    vm_id        = 9010  # Use template 9010 on pve2 (distributed template)
+    vm_id        = 9010
     full         = true
     datastore_id = "cluster-shared-nfs"
   }
@@ -122,7 +115,6 @@ resource "proxmox_virtual_environment_vm" "worker" {
   }
 }
 
-# --- CONNECTIVITY VERIFICATION ---
 resource "null_resource" "verify_cluster_ready" {
   depends_on = [
     proxmox_virtual_environment_vm.master,
@@ -137,23 +129,18 @@ resource "null_resource" "verify_cluster_ready" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "🔍 Verifying K3s cluster VMs..."
+      echo "Verifying K3s cluster VMs..."
       
-      # Wait for both VMs
       for ip in ${module.shared.network.k3s_master} ${module.shared.network.k3s_worker_01}; do
-        echo "⏳ Waiting for $ip..."
+        echo "Waiting for $ip..."
         timeout 120 bash -c "while ! ping -c 1 $ip >/dev/null 2>&1; do sleep 5; done"
-        echo "✅ $ip is ready"
+        echo "$ip is ready"
       done
       
-      echo "🎉 K3s cluster VMs are ready for Ansible!"
+      echo "K3s cluster VMs are ready for Ansible"
     EOT
   }
 }
-
-# ===================================================================
-#  NEW: DYNAMIC ANSIBLE INVENTORY GENERATION
-# ===================================================================
 
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/../../05_k3s_ansible_bootstrap/inventory.yml.tpl", {
@@ -175,7 +162,6 @@ resource "local_file" "ansible_inventory" {
   ]
 }
 
-# --- BACKUP ORIGINAL INVENTORY ---
 resource "local_file" "ansible_inventory_backup" {
   content = templatefile("${path.module}/../../05_k3s_ansible_bootstrap/inventory.yml.tpl", {
     master_ip     = module.shared.network.k3s_master

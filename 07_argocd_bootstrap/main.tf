@@ -1,10 +1,7 @@
 # ===================================================================
-#  ARGOCD BOOTSTRAP - FINAL WORKING CONFIGURATION
-#  This version uses the Ingress configuration that is proven to work
-#  in your specific K3s environment, integrated into your repo structure.
+#  ARGOCD BOOTSTRAP - CLEAN VERSION
 # ===================================================================
 
-# --- IMPORT SHARED CONFIGURATION ---
 module "shared" {
   source = "../shared"
   providers = {
@@ -12,7 +9,10 @@ module "shared" {
   }
 }
 
-# --- ARGOCD NAMESPACE ---
+data "google_secret_manager_secret_version" "tunnel_cname" {
+  secret = "tunnel-cname"
+}
+
 resource "kubernetes_namespace" "argocd" {
   provider = kubernetes.k3s_cluster
   metadata {
@@ -24,7 +24,6 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
-# --- ARGOCD HELM RELEASE ---
 resource "helm_release" "argocd" {
   provider = helm.k3s_apps
 
@@ -41,7 +40,7 @@ resource "helm_release" "argocd" {
   set_sensitive = [
     {
       name  = "configs.secret.argocdServerAdminPassword"
-      value = trimspace(data.google_secret_manager_secret_version.argocd_admin_password.secret_data)
+      value = module.shared.argocd_admin_password
     }
   ]
 
@@ -61,9 +60,6 @@ resource "helm_release" "argocd" {
   timeout       = 900
 }
 
-# --- PROVEN WORKING INGRESS CONFIGURATION ---
-# This Ingress resource uses the exact annotations and structure
-# from your working commit.
 resource "kubernetes_ingress_v1" "argocd_ingress" {
   provider = kubernetes.k3s_cluster
 
@@ -71,17 +67,13 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
     name      = "argocd-server-ingress"
     namespace = kubernetes_namespace.argocd.metadata[0].name
     annotations = {
-      # This annotation is what your Traefik controller understands.
       "kubernetes.io/ingress.class" : "traefik",
-      
-      # These annotations explicitly tell ExternalDNS what to do.
-      "external-dns.alpha.kubernetes.io/target" : trimspace(data.google_secret_manager_secret_version.tunnel_cname.secret_data),
+      "external-dns.alpha.kubernetes.io/target" : module.shared.tunnel_cname,
       "external-dns.alpha.kubernetes.io/cloudflare-proxied" : "true"
     }
   }
 
   spec {
-    # NO ingressClassName is included, matching the working version.
     rule {
       host = local.argocd_hostname
       http {
@@ -104,7 +96,6 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
   depends_on = [helm_release.argocd]
 }
 
-# --- LOCAL VARIABLES ---
 locals {
   argocd_hostname = var.argocd_hostname != "" ? var.argocd_hostname : "argocd.${module.shared.domain}"
 }

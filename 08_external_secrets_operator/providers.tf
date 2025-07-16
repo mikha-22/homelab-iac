@@ -1,5 +1,5 @@
 # ===================================================================
-#  EXTERNAL SECRETS OPERATOR - PROVIDERS
+#  EXTERNAL SECRETS OPERATOR - PROVIDERS - SIMPLIFIED
 # ===================================================================
 
 # --- PROVIDER CONFIGURATIONS ---
@@ -27,8 +27,5 @@ provider "time" {
 
 provider "null" {}
 
-# --- DATA SOURCES ---
-data "google_secret_manager_secret_version" "service_account_key" {
-  provider = google.primary
-  secret   = var.service_account_secret_name
-}
+# NOTE: Removed duplicate data source - now comes from shared module
+# Access service account key via module.shared.eso_service_account_key

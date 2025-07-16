@@ -1,39 +1,23 @@
 # ===================================================================
-#  CLOUDFLARE TUNNEL VARIABLES - UPDATED WITH SHARED CONFIG
-#  Domain name now comes from shared configuration
+#  CLOUDFLARE TUNNEL VARIABLES - SIMPLIFIED VALIDATION
 # ===================================================================
 
 variable "tunnel_name" {
   description = "Name for your Cloudflare Tunnel"
   type        = string
   default     = "homelab-k3s-tunnel"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.tunnel_name))
-    error_message = "Tunnel name must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "traefik_service_name" {
   description = "Traefik service name in Kubernetes"
   type        = string
   default     = "traefik"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.traefik_service_name))
-    error_message = "Service name must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "traefik_namespace" {
   description = "Kubernetes namespace where Traefik is deployed"
   type        = string
   default     = "kube-system"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.traefik_namespace))
-    error_message = "Namespace must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "cloudflared_replicas" {
@@ -51,11 +35,6 @@ variable "external_dns_version" {
   description = "External DNS Helm chart version"
   type        = string
   default     = "1.14.3"
-  
-  validation {
-    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.external_dns_version))
-    error_message = "External DNS version must be in semantic version format (e.g., 1.14.3)."
-  }
 }
 
 variable "enable_tunnel_metrics" {
@@ -75,37 +54,6 @@ variable "tunnel_log_level" {
   }
 }
 
-# --- COMPUTED VALUES ---
-# Note: Domain name comes from shared configuration
-# Access via: module.shared.domain
-
-locals {
-  # Tunnel configuration
-  tunnel_config = {
-    name         = var.tunnel_name
-    replicas     = var.cloudflared_replicas
-    log_level    = var.tunnel_log_level
-    enable_metrics = var.enable_tunnel_metrics
-  }
-  
-  # Service configuration  
-  traefik_config = {
-    service_name = var.traefik_service_name
-    namespace    = var.traefik_namespace
-    service_url  = "http://${var.traefik_service_name}.${var.traefik_namespace}.svc.cluster.local:80"
-  }
-  
-  # External DNS configuration
-  external_dns_config = {
-    chart_version = var.external_dns_version
-    txt_owner_id  = "homelab-k3s"
-    policy        = "sync"
-    interval      = "1m"
-    log_level     = "info"
-  }
-}
-
-# --- FEATURE FLAGS ---
 variable "enable_debug_logging" {
   description = "Enable debug logging for troubleshooting"
   type        = bool
@@ -118,7 +66,6 @@ variable "enable_advanced_routing" {
   default     = false
 }
 
-# --- RESOURCE LIMITS ---
 variable "resource_limits" {
   description = "Resource limits for tunnel components"
   type = object({
@@ -136,4 +83,28 @@ variable "resource_limits" {
     }), {})
   })
   default = {}
+}
+
+# --- COMPUTED VALUES ---
+locals {
+  tunnel_config = {
+    name         = var.tunnel_name
+    replicas     = var.cloudflared_replicas
+    log_level    = var.tunnel_log_level
+    enable_metrics = var.enable_tunnel_metrics
+  }
+  
+  traefik_config = {
+    service_name = var.traefik_service_name
+    namespace    = var.traefik_namespace
+    service_url  = "http://${var.traefik_service_name}.${var.traefik_namespace}.svc.cluster.local:80"
+  }
+  
+  external_dns_config = {
+    chart_version = var.external_dns_version
+    txt_owner_id  = "homelab-k3s"
+    policy        = "sync"
+    interval      = "1m"
+    log_level     = "info"
+  }
 }

@@ -6,7 +6,7 @@ variable "project_id" {
 variable "region" {
   description = "GCP Region"
   type        = string
-  default     = "asia-southeast1"  # Singapore
+  default     = "asia-southeast1"
 }
 
 variable "k8s_cluster_name" {
@@ -31,14 +31,13 @@ variable "secrets" {
 }
 
 variable "ssh_public_key_path" {
-  description = "Path to the public SSH key file for general VM user access."
+  description = "Path to the public SSH key file for VM user access"
   type        = string
   default     = "~/.ssh/id_rsa.pub"
 }
 
-# NEW: Add variable for Proxmox SSH private key path
 variable "proxmox_ssh_private_key_path" {
-  description = "Path to the Proxmox SSH private key file."
+  description = "Path to the Proxmox SSH private key file"
   type        = string
   default     = "~/.ssh/proxmox_terraform"
 }

@@ -1,50 +1,29 @@
 # ===================================================================
-#  ARGOCD VARIABLES - UPDATED WITH SHARED CONFIG
-#  Domain name now comes from shared configuration
+#  ARGOCD VARIABLES - SIMPLIFIED VALIDATION
 # ===================================================================
 
 variable "kubeconfig_path" {
   description = "Path to kubeconfig file"
   type        = string
   default     = "~/.kube/config"
-  
-  validation {
-    condition     = can(regex("^[/~].*", var.kubeconfig_path))
-    error_message = "Kubeconfig path must be an absolute path or start with ~."
-  }
 }
 
 variable "argocd_namespace" {
   description = "Kubernetes namespace for ArgoCD"
   type        = string
   default     = "argocd"
-  
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.argocd_namespace))
-    error_message = "Namespace must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 variable "chart_version" {
   description = "ArgoCD Helm chart version"
   type        = string
   default     = "7.7.8"
-  
-  validation {
-    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.chart_version))
-    error_message = "Chart version must be in semantic version format (e.g., 7.7.8)."
-  }
 }
 
 variable "argocd_hostname" {
   description = "ArgoCD hostname (defaults to argocd.domain from shared config)"
   type        = string
   default     = ""
-  
-  validation {
-    condition = var.argocd_hostname == "" || can(regex("^[a-z0-9.-]+$", var.argocd_hostname))
-    error_message = "Hostname must contain only lowercase letters, numbers, dots, and hyphens."
-  }
 }
 
 variable "server_insecure" {
@@ -116,7 +95,6 @@ variable "additional_labels" {
 
 # --- COMPUTED VALUES ---
 locals {
-  # Final resource configuration
   final_resource_limits = {
     server = merge(
       {
@@ -147,7 +125,6 @@ locals {
     )
   }
   
-  # ArgoCD configuration
   argocd_config = {
     namespace        = var.argocd_namespace
     chart_version    = var.chart_version
