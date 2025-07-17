@@ -40,10 +40,5 @@ data "google_secret_manager_secret_version" "eso_service_account_key" {
   secret = "external-secrets-service-account-key"
 }
 
-data "google_secret_manager_secret_version" "tunnel_cname" {
-  secret = "tunnel-cname"
-}
-
-# NOTE: No provider blocks here. Each module that uses the shared module
-# will configure its own Google provider, and these data sources will
-# automatically use that provider configuration.
+# NOTE: tunnel-cname secret is handled directly in modules that need it
+# since it's created by the Cloudflare tunnel module

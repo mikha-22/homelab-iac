@@ -20,7 +20,7 @@ output "authentication" {
 output "cluster_secret_store" {
   description = "ClusterSecretStore resource information"
   value = {
-    name   = kubernetes_manifest.cluster_secret_store.manifest.metadata.name
+    name   = var.cluster_secret_store_name
     ready  = "kubectl get clustersecretstore ${var.cluster_secret_store_name} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
   }
 }

@@ -9,8 +9,10 @@ module "shared" {
   }
 }
 
+# Get tunnel CNAME directly (created by Cloudflare module)
 data "google_secret_manager_secret_version" "tunnel_cname" {
-  secret = "tunnel-cname"
+  provider = google.primary
+  secret   = "tunnel-cname"
 }
 
 resource "kubernetes_namespace" "argocd" {
@@ -68,7 +70,7 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
     namespace = kubernetes_namespace.argocd.metadata[0].name
     annotations = {
       "kubernetes.io/ingress.class" : "traefik",
-      "external-dns.alpha.kubernetes.io/target" : module.shared.tunnel_cname,
+      "external-dns.alpha.kubernetes.io/target" : trimspace(data.google_secret_manager_secret_version.tunnel_cname.secret_data),
       "external-dns.alpha.kubernetes.io/cloudflare-proxied" : "true"
     }
   }

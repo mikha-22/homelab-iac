@@ -24,6 +24,7 @@ output "cluster_nodes" {
 
 output "ansible_config" {
   description = "Ansible inventory configuration"
+  sensitive   = true
   value = {
     master_ip     = module.shared.network.k3s_master
     worker_ip     = module.shared.network.k3s_worker_01

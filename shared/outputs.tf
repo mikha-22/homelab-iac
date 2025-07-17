@@ -107,11 +107,7 @@ output "eso_service_account_key" {
   sensitive = true
 }
 
-output "tunnel_cname" {
-  description = "Cloudflare tunnel CNAME"
-  value = trimspace(data.google_secret_manager_secret_version.tunnel_cname.secret_data)
-  sensitive = true
-}
+# NOTE: tunnel_cname is handled directly in ArgoCD module since it's created by Cloudflare module
 
 # --- TAGGING ---
 output "common_tags" {

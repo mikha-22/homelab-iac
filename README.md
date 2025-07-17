@@ -1,6 +1,6 @@
-# 🏠 Homelab Infrastructure as Code
+# Homelab Infrastructure as Code
 
-Deploy a complete K3s homelab with GitOps using Terraform and Ansible.
+Deploy a K3s homelab with GitOps using Terraform and Ansible.
 
 ## What This Builds
 
@@ -14,9 +14,8 @@ Deploy a complete K3s homelab with GitOps using Terraform and Ansible.
 ## Quick Deploy
 
 ```bash
-# 1. Set up your secrets in 02_google_secret_manager/terraform.tfvars
+# 1. Set up the secrets in 02_google_secret_manager/terraform.tfvars
 # 2. Run the deploy script
-chmod +x scripts/deploy-all.sh
 ./scripts/deploy-all.sh
 ```
 
@@ -143,5 +142,3 @@ Edit `shared/variables.tf` for:
 - Custom VM resources  
 - Your domain name
 - Environment sizing (minimal/homelab/development)
-
-That's it! No enterprise complexity - just a working homelab. 🎯

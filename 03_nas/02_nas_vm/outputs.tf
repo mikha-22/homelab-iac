@@ -33,7 +33,7 @@ output "troubleshooting" {
   value = {
     ping_nas       = "ping ${module.shared.network.nas_server}"
     ssh_nas        = module.shared.ssh_commands.nas_server
-    check_nfs      = "ssh ${module.shared.ssh_commands.nas_server} 'systemctl status nfs-kernel-server'"
-    check_exports  = "ssh ${module.shared.ssh_commands.nas_server} 'exportfs -v'"
+    check_nfs      = "ssh mikha@${module.shared.network.nas_server} 'systemctl status nfs-kernel-server'"
+    check_exports  = "ssh mikha@${module.shared.network.nas_server} 'exportfs -v'"
   }
 }

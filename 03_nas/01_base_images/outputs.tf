@@ -8,6 +8,12 @@ output "ubuntu_image" {
   }
 }
 
+# Legacy compatibility output
+output "ubuntu_image_id" {
+  description = "The ID of the downloaded Ubuntu cloud image"
+  value       = proxmox_virtual_environment_download_file.ubuntu_noble.id
+}
+
 output "next_steps" {
   description = "Commands to run next"
   value = {
