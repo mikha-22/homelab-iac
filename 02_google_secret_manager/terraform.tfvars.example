@@ -1,80 +1,36 @@
-# terraform.tfvars.example
-# Copy this to terraform.tfvars and fill in your values
+# terraform.tfvars.example - ESSENTIAL SECRETS ONLY
+# Copy to terraform.tfvars and fill in your actual values
 
-# Your GCP Project ID (create a new free project)
-project_id = "your-homelab-project-id"
+project_id = "your-gcp-project-id"
 
-# GCP Region (us-central1 has good free tier coverage)
-region = "us-central1"
-
-# Your cluster name (for organization)
-k8s_cluster_name = "homelab-k3s"
-
-# Namespace where External Secrets Operator will be deployed
-k8s_namespace = "external-secrets"
-
-# Path to your public SSH key for VM access (used for all VMs)
-ssh_public_key_path = "~/.ssh/id_rsa.pub"
-
-# REMOVED: packer_public_key_path - no longer needed since we removed Packer!
-# All VMs now use the same SSH key for simplicity and reliability
-
-# Secrets to create in Google Secret Manager
+# Essential infrastructure secrets
 secrets = {
-  # Infrastructure secrets
+  # Proxmox access
   "proxmox-api-token" = {
     secret_data = "your-proxmox-api-token"
-    description = "Proxmox API token for infrastructure automation"
+    description = "Proxmox API token"
   }
   
-  "proxmox-ssh-password" = {
-    secret_data = "your-proxmox-root-password"
-    description = "Proxmox root password for SSH access"
-  }
-  
-  # ArgoCD admin password
-  "argocd-admin-password" = {
-    secret_data = "your-secure-argocd-password"
-    description = "ArgoCD admin password for homelab"
-  }
-  
-  # MinIO credentials
-  "minio-root-user" = {
-    secret_data = "minio-admin"
-    description = "MinIO root username"
-  }
-  
-  "minio-root-password" = {
-    secret_data = "your-secure-minio-password"
-    description = "MinIO root password"
-  }
-  
-  # Cloudflare credentials
+  # Cloudflare access
   "cloudflare-api-token" = {
     secret_data = "your-cloudflare-api-token"
-    description = "Cloudflare API token for External DNS"
+    description = "Cloudflare API token"
   }
   
   "cloudflare-account-id" = {
     secret_data = "your-cloudflare-account-id"
-    description = "Cloudflare account ID for tunnel creation"
+    description = "Cloudflare account ID"
   }
   
-  # Database credentials (if you add a database later)
-  "postgres-password" = {
-    secret_data = "your-secure-db-password"
-    description = "PostgreSQL admin password"
+  # K3s cluster
+  "k3s-cluster-token" = {
+    secret_data = "your-k3s-cluster-token"
+    description = "K3s cluster join token"
   }
   
-  # Grafana admin password
-  "grafana-admin-password" = {
-    secret_data = "your-secure-grafana-password"
-    description = "Grafana admin password"
-  }
-  
-  # GitHub Actions runner token (if using self-hosted runners)
-  "github-runner-token" = {
-    secret_data = "your-github-runner-token"
-    description = "GitHub Actions runner registration token"
+  # ArgoCD
+  "argocd-admin-password" = {
+    secret_data = "your-argocd-password"
+    description = "ArgoCD admin password"
   }
 }

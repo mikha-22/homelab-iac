@@ -1,5 +1,5 @@
 # ===================================================================
-#  ARGOCD VARIABLES - SIMPLIFIED VALIDATION
+#  ARGOCD VARIABLES - SIMPLIFIED
 # ===================================================================
 
 variable "kubeconfig_path" {
@@ -36,100 +36,4 @@ variable "redis_ha_enabled" {
   description = "Enable Redis HA (recommended for production)"
   type        = bool
   default     = false
-}
-
-variable "enable_metrics" {
-  description = "Enable Prometheus metrics collection"
-  type        = bool
-  default     = true
-}
-
-variable "enable_notifications" {
-  description = "Enable ArgoCD notifications controller"
-  type        = bool
-  default     = true
-}
-
-variable "enable_applicationset" {
-  description = "Enable ArgoCD ApplicationSet controller"
-  type        = bool
-  default     = true
-}
-
-variable "resource_limits" {
-  description = "Resource limits for ArgoCD components"
-  type = object({
-    server = optional(object({
-      cpu_limit      = optional(string, "500m")
-      memory_limit   = optional(string, "512Mi")
-      cpu_request    = optional(string, "250m")
-      memory_request = optional(string, "256Mi")
-    }), {})
-    controller = optional(object({
-      cpu_limit      = optional(string, "1000m")
-      memory_limit   = optional(string, "1Gi")
-      cpu_request    = optional(string, "500m")
-      memory_request = optional(string, "512Mi")
-    }), {})
-    repo_server = optional(object({
-      cpu_limit      = optional(string, "500m")
-      memory_limit   = optional(string, "512Mi")
-      cpu_request    = optional(string, "250m")
-      memory_request = optional(string, "256Mi")
-    }), {})
-  })
-  default = {}
-}
-
-variable "additional_annotations" {
-  description = "Additional annotations for ArgoCD ingress"
-  type        = map(string)
-  default     = {}
-}
-
-variable "additional_labels" {
-  description = "Additional labels for ArgoCD resources"
-  type        = map(string)
-  default     = {}
-}
-
-# --- COMPUTED VALUES ---
-locals {
-  final_resource_limits = {
-    server = merge(
-      {
-        cpu_limit      = "500m"
-        memory_limit   = "512Mi"
-        cpu_request    = "250m"
-        memory_request = "256Mi"
-      },
-      var.resource_limits.server
-    )
-    controller = merge(
-      {
-        cpu_limit      = "1000m"
-        memory_limit   = "1Gi"
-        cpu_request    = "500m"
-        memory_request = "512Mi"
-      },
-      var.resource_limits.controller
-    )
-    repo_server = merge(
-      {
-        cpu_limit      = "500m"
-        memory_limit   = "512Mi"
-        cpu_request    = "250m"
-        memory_request = "256Mi"
-      },
-      var.resource_limits.repo_server
-    )
-  }
-  
-  argocd_config = {
-    namespace        = var.argocd_namespace
-    chart_version    = var.chart_version
-    server_insecure  = var.server_insecure
-    redis_ha         = var.redis_ha_enabled
-    metrics_enabled  = var.enable_metrics
-  }
 }

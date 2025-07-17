@@ -1,17 +1,12 @@
 # ===================================================================
-#  EXTERNAL SECRETS OPERATOR - USING KUBERNETES_MANIFEST
+#  EXTERNAL SECRETS OPERATOR - SIMPLIFIED
 # ===================================================================
 
 module "shared" {
   source = "../shared"
-  providers = {
-    google = google.primary
-  }
 }
 
 resource "kubernetes_namespace" "external_secrets" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name = var.eso_namespace
     labels = {
@@ -22,8 +17,6 @@ resource "kubernetes_namespace" "external_secrets" {
 }
 
 resource "helm_release" "external_secrets" {
-  provider = helm.k3s_apps
-
   name       = "external-secrets"
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
@@ -38,7 +31,7 @@ resource "helm_release" "external_secrets" {
 
   set {
     name  = "replicaCount"
-    value = local.eso_config.replicas
+    value = var.enable_ha ? 2 : 1
   }
 
   wait = true
@@ -48,8 +41,6 @@ resource "helm_release" "external_secrets" {
 }
 
 resource "kubernetes_secret" "gcp_service_account" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name      = var.service_account_secret_k8s_name
     namespace = kubernetes_namespace.external_secrets.metadata[0].name
@@ -67,7 +58,6 @@ resource "kubernetes_secret" "gcp_service_account" {
 }
 
 resource "time_sleep" "wait_for_eso_ready" {
-  provider   = time.scheduling
   depends_on = [helm_release.external_secrets]
   create_duration = "120s"
 }

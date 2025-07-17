@@ -1,5 +1,5 @@
 # ===================================================================
-#  CLOUDFLARE TUNNEL - CLEAN CONFIGURATION
+#  CLOUDFLARE TUNNEL - SIMPLIFIED PROVIDERS
 # ===================================================================
 
 module "shared" {
@@ -7,24 +7,19 @@ module "shared" {
 }
 
 resource "random_password" "tunnel_secret" {
-  provider = random.generation
   length  = 35
   special = false
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "k3s_tunnel" {
-  provider = cloudflare.dns_tunnels
-
-  account_id = module.shared.cloudflare_config.account_id
+  account_id = trimspace(data.google_secret_manager_secret_version.cloudflare_account_id.secret_data)
   name       = var.tunnel_name
   secret     = base64encode(random_password.tunnel_secret.result)
   config_src = "cloudflare"
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
-  provider = cloudflare.dns_tunnels
-
-  account_id = module.shared.cloudflare_config.account_id
+  account_id = trimspace(data.google_secret_manager_secret_version.cloudflare_account_id.secret_data)
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.id
 
   config {
@@ -45,8 +40,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
 }
 
 resource "kubernetes_namespace" "cloudflared" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name = "cloudflared"
     labels = {
@@ -56,8 +49,6 @@ resource "kubernetes_namespace" "cloudflared" {
 }
 
 resource "kubernetes_namespace" "external_dns" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name = "external-dns"
     labels = {
@@ -67,21 +58,17 @@ resource "kubernetes_namespace" "external_dns" {
 }
 
 resource "kubernetes_secret" "cloudflare_api_token_secret" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name      = "cloudflare-api-token-secret"
     namespace = kubernetes_namespace.external_dns.metadata[0].name
   }
 
   data = {
-    apiKey = module.shared.cloudflare_api_token
+    apiKey = trimspace(data.google_secret_manager_secret_version.cloudflare_api_token.secret_data)
   }
 }
 
 resource "helm_release" "external_dns" {
-  provider = helm.k3s_apps
-
   name       = "external-dns"
   repository = "https://kubernetes-sigs.github.io/external-dns/"
   chart      = "external-dns"
@@ -117,8 +104,6 @@ resource "helm_release" "external_dns" {
 }
 
 resource "kubernetes_secret" "tunnel_credentials" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name      = "tunnel-token"
     namespace = kubernetes_namespace.cloudflared.metadata[0].name
@@ -130,8 +115,6 @@ resource "kubernetes_secret" "tunnel_credentials" {
 }
 
 resource "kubernetes_deployment" "cloudflared" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name      = "cloudflared"
     namespace = kubernetes_namespace.cloudflared.metadata[0].name

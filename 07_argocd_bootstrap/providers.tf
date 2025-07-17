@@ -2,24 +2,17 @@
 #  ARGOCD BOOTSTRAP PROVIDERS - SIMPLIFIED
 # ===================================================================
 
-# --- PROVIDER CONFIGURATIONS ---
 provider "google" {
-  alias   = "primary"
   project = "homelab-secret-manager"
   region  = "asia-southeast1"
 }
 
 provider "kubernetes" {
-  alias       = "k3s_cluster"
   config_path = "~/.kube/config"
 }
 
 provider "helm" {
-  alias = "k3s_apps"
-  kubernetes = {
+  kubernetes {
     config_path = "~/.kube/config"
   }
 }
-
-# NOTE: Removed duplicate data sources - these now come from shared module
-# Access secrets via module.shared.argocd_admin_password and module.shared.tunnel_cname

@@ -1,22 +1,21 @@
 # ===================================================================
-#  ARGOCD BOOTSTRAP - CLEAN VERSION
+#  ARGOCD BOOTSTRAP - SIMPLIFIED
 # ===================================================================
 
 module "shared" {
   source = "../shared"
-  providers = {
-    google = google.primary
-  }
 }
 
 # Get tunnel CNAME directly (created by Cloudflare module)
 data "google_secret_manager_secret_version" "tunnel_cname" {
-  provider = google.primary
-  secret   = "tunnel-cname"
+  secret = "tunnel-cname"
+}
+
+locals {
+  argocd_hostname = var.argocd_hostname != "" ? var.argocd_hostname : "argocd.${module.shared.domain}"
 }
 
 resource "kubernetes_namespace" "argocd" {
-  provider = kubernetes.k3s_cluster
   metadata {
     name = var.argocd_namespace
     labels = {
@@ -27,8 +26,6 @@ resource "kubernetes_namespace" "argocd" {
 }
 
 resource "helm_release" "argocd" {
-  provider = helm.k3s_apps
-
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
@@ -50,6 +47,14 @@ resource "helm_release" "argocd" {
     {
       name  = "configs.cm.url"
       value = "https://${local.argocd_hostname}"
+    },
+    {
+      name  = "server.insecure"
+      value = var.server_insecure
+    },
+    {
+      name  = "redis-ha.enabled"
+      value = var.redis_ha_enabled
     }
   ]
 
@@ -63,8 +68,6 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubernetes_ingress_v1" "argocd_ingress" {
-  provider = kubernetes.k3s_cluster
-
   metadata {
     name      = "argocd-server-ingress"
     namespace = kubernetes_namespace.argocd.metadata[0].name
@@ -96,8 +99,4 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
   }
 
   depends_on = [helm_release.argocd]
-}
-
-locals {
-  argocd_hostname = var.argocd_hostname != "" ? var.argocd_hostname : "argocd.${module.shared.domain}"
 }
