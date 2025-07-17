@@ -1,5 +1,5 @@
 # ===================================================================
-#  CLOUDFLARE TUNNEL - SIMPLIFIED PROVIDERS
+#  CLOUDFLARE TUNNEL - CLEAN CONFIGURATION
 # ===================================================================
 
 module "shared" {

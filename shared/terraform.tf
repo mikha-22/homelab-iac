@@ -1,10 +1,8 @@
 terraform {
   required_version = ">= 1.5.0"
   
-  backend "gcs" {
-    bucket = "homelab-terraform-state-shared"
-    prefix = "shared"
-  }
+  # REMOVED: backend configuration - shared modules shouldn't have backends
+  # Individual modules that import this will define their own backends
   
   required_providers {
     google = {

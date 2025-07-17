@@ -1,3 +1,7 @@
+# ===================================================================
+#  CLOUDFLARE TUNNEL PROVIDERS - FIXED VERSION
+# ===================================================================
+
 provider "google" {
   project = "homelab-secret-manager"
   region  = "asia-southeast1"
@@ -12,7 +16,7 @@ provider "kubernetes" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     config_path = "~/.kube/config"
   }
 }
