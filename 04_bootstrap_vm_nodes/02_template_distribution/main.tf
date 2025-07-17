@@ -1,17 +1,26 @@
-# ===================================================================
-#  SIMPLIFIED TEMPLATE DISTRIBUTION - FIXED FOR SHARED STORAGE
-# ===================================================================
-
 module "shared" {
   source = "../../shared"
 }
 
-# Clone template to pve1 (local storage)
-resource "null_resource" "clone_template_to_pve1" {
+# Move base template to shared storage first
+resource "null_resource" "move_to_shared_storage" {
   triggers = {
     template_id = module.shared.vm_ids.base_template
   }
 
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Move disk from local-lvm to shared storage
+      ssh -o StrictHostKeyChecking=no root@pve1.local \
+        "qm disk move ${module.shared.vm_ids.base_template} scsi0 cluster-shared-nfs --format qcow2"
+    EOT
+  }
+}
+
+# Clone to pve1 (template 9000)
+resource "null_resource" "clone_to_pve1" {
+  depends_on = [null_resource.move_to_shared_storage]
+  
   provisioner "local-exec" {
     command = <<-EOT
       ssh -o StrictHostKeyChecking=no root@pve1.local "
@@ -22,17 +31,14 @@ resource "null_resource" "clone_template_to_pve1" {
   }
 }
 
-# Clone template to pve2 using shared storage
-resource "null_resource" "clone_template_to_pve2" {
-  triggers = {
-    template_id = module.shared.vm_ids.base_template
-  }
-
+# Clone to pve2 (template 9010) 
+resource "null_resource" "clone_to_pve2" {
+  depends_on = [null_resource.move_to_shared_storage]
+  
   provisioner "local-exec" {
     command = <<-EOT
-      ssh -o StrictHostKeyChecking=no root@pve1.local "
-        qm clone ${module.shared.vm_ids.base_template} 9010 --name ubuntu-2404-base-pve2 --target pve2 --full --storage cluster-shared-nfs
-      "
+      ssh -o StrictHostKeyChecking=no root@pve1.local \
+        "qm clone ${module.shared.vm_ids.base_template} 9010 --name ubuntu-2404-base-pve2 --target pve2 --full"
       ssh -o StrictHostKeyChecking=no root@pve2.local "qm template 9010"
     EOT
   }

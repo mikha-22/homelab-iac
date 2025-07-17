@@ -1,15 +1,11 @@
 # ===================================================================
-#  PHASE 1: CREATE BASE TEMPLATE - USING CENTRALIZED PROVIDERS
-#  Creates cloud-init file on SHARED storage for cross-node access
-#  Uses direct template creation instead of Packer builds
+#  PHASE 1: CREATE BASE TEMPLATE ON SHARED STORAGE
 # ===================================================================
 
-# --- IMPORT SHARED MODULE (FIXED PATH) ---
 module "shared" {
-  source = "../../shared"  # Fixed: was ../../../shared
+  source = "../../shared"
 }
 
-# --- DATA SOURCE TO GET BASE IMAGE ID ---
 data "terraform_remote_state" "base_images" {
   backend = "gcs"
   config = {
@@ -18,14 +14,12 @@ data "terraform_remote_state" "base_images" {
   }
 }
 
-# --- RENDER THE CLOUD-INIT FILE AS A TEMPLATE ---
 locals {
   base_template_init_content = templatefile("${path.module}/base-template-init.yaml", {
     user_ssh_public_key = module.shared.nas_ssh_public_key
   })
 }
 
-# --- CREATE CLOUD-INIT FILE ON SHARED STORAGE ---
 resource "proxmox_virtual_environment_file" "base_template_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -37,10 +31,9 @@ resource "proxmox_virtual_environment_file" "base_template_init" {
   }
 }
 
-# --- BASE VM TEMPLATE (NO PACKER NEEDED) ---
 resource "proxmox_virtual_environment_vm" "base_cloud_template" {
   name        = "ubuntu-2404-cloud-base"
-  description = "Base cloud-image template for VM deployment - no Packer needed!"
+  description = "Base cloud-image template on shared storage"
   node_name   = "pve1"
   vm_id       = 9999
   template    = true
@@ -60,8 +53,9 @@ resource "proxmox_virtual_environment_vm" "base_cloud_template" {
     model  = "virtio"
   }
 
+  # KEY CHANGE: Use cluster-shared-nfs instead of local-lvm
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = "cluster-shared-nfs"
     interface    = "scsi0"
     size         = 10
     file_id      = data.terraform_remote_state.base_images.outputs.ubuntu_image_id
