@@ -53,7 +53,6 @@ resource "proxmox_virtual_environment_vm" "base_cloud_template" {
     model  = "virtio"
   }
 
-  # KEY CHANGE: Use cluster-shared-nfs instead of local-lvm
   disk {
     datastore_id = "cluster-shared-nfs"
     interface    = "scsi0"

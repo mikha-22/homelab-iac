@@ -9,6 +9,3 @@ provider "google" {
 }
 
 provider "null" {}
-
-# NOTE: Removed duplicate data sources - these now come from shared module
-# All authentication data is accessed via module.shared.* outputs

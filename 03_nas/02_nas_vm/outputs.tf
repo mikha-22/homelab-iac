@@ -21,7 +21,3 @@ output "nfs_config" {
     storage_name = "cluster-shared-nfs"
   }
 }
-
-# REMOVED: troubleshooting section (30+ lines of debug commands)
-# REMOVED: next_steps section (helpful but clutters interface)
-# KEPT: Only essential data that other modules actually use

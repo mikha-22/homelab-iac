@@ -3,7 +3,7 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "03_nas/01_base_images"  # ✅ Fixed to match directory structure
+    prefix = "03_nas/01_base_images"
   }
   
   required_providers {

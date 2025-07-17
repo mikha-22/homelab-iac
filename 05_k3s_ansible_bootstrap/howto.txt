@@ -1,1 +1,1 @@
-ansible-playbook k3s.orchestration.site # this one is for k3s
+ansible-playbook k3s.orchestration.site
