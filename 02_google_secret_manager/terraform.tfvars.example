@@ -1,0 +1,36 @@
+# terraform.tfvars.example - ESSENTIAL SECRETS ONLY
+# Copy to terraform.tfvars and fill in your actual values
+
+project_id = "your-gcp-project-id"
+
+# Essential infrastructure secrets
+secrets = {
+  # Proxmox access
+  "proxmox-api-token" = {
+    secret_data = "your-proxmox-api-token"
+    description = "Proxmox API token"
+  }
+  
+  # Cloudflare access
+  "cloudflare-api-token" = {
+    secret_data = "your-cloudflare-api-token"
+    description = "Cloudflare API token"
+  }
+  
+  "cloudflare-account-id" = {
+    secret_data = "your-cloudflare-account-id"
+    description = "Cloudflare account ID"
+  }
+  
+  # K3s cluster
+  "k3s-cluster-token" = {
+    secret_data = "your-k3s-cluster-token"
+    description = "K3s cluster join token"
+  }
+  
+  # ArgoCD
+  "argocd-admin-password" = {
+    secret_data = "your-argocd-password"
+    description = "ArgoCD admin password"
+  }
+}

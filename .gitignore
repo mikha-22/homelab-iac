@@ -1,0 +1,290 @@
+*/.terraform.lock.hcl
+.terraform/providers/registry.terraform.io/hashicorp/google/6.43.0/linux_amd64/LICENSE.txt
+.terraform.lock.hcl
+**/terraform.tfvars
+
+# ===================================================================
+#  Default Git / Repo-specific
+# ===================================================================
+# Ignore the git directory itself (though Git does this by default)
+.git/
+
+# Ignore Repomix output file
+repomix-output.xml
+
+
+# ===================================================================
+#  CRITICAL: Sensitive Configuration Files
+# ===================================================================
+# Terraform variable files containing secrets
+terraform.tfvars
+*.auto.tfvars
+secrets.tfvars
+**/terraform.tfvars
+**/secrets.tfvars
+
+# Service account keys and credentials
+*service-account*.json
+sa-key-*.json
+gcp-credentials*.json
+*-credentials.json
+
+# SSH keys (if stored in repo)
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*.ppk
+
+# API keys and tokens
+*.token
+*api-key*
+*-token.txt
+
+# Certificate files
+*.crt
+*.cert
+*.p12
+*.pfx
+
+
+# ===================================================================
+#  General & Secrets
+# ===================================================================
+# Environment files, which often contain secrets
+*.env
+.env.*
+.envrc
+
+# Secret variable files for Packer
+*.auto.pkrvars.hcl
+*secrets*.pkrvars.hcl
+
+# Log files
+*.log
+
+# Temporary files and directories
+/temp/
+*.tmp
+.tmp/
+
+
+# ===================================================================
+#  Terraform
+# ===================================================================
+# Local Terraform state files and backups
+# CRITICAL: These files can contain sensitive infrastructure data.
+*.tfstate
+*.tfstate.*
+
+# Directory for local provider plugins
+.terraform/
+
+# Terraform lock file for providers (commit this in production)
+# Uncomment if you want to ignore lock files:
+# .terraform.lock.hcl
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Terraform plan files, which can also contain sensitive info
+*.tfplan
+*.tfplan.json
+
+# Override files, should not be committed
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform CLI configuration files
+.terraformrc
+terraform.rc
+
+# Terraform workspace files
+terraform.tfstate.d/
+
+
+# ===================================================================
+#  Packer
+# ===================================================================
+# Packer cache directory
+packer-cache/
+
+# Packer manifest files (may contain sensitive data)
+packer-manifest.json
+
+# Packer variable files with secrets
+*secrets*.pkrvars.hcl
+
+
+# ===================================================================
+#  Ansible
+# ===================================================================
+# Python virtual environment directory
+# CRITICAL: This is large and specific to your local machine.
+ansible-venv/
+venv/
+.venv/
+
+# Retry files created by Ansible on failed runs
+*.retry
+
+# Ansible vault files (if not using external secret management)
+*vault*
+*.vault
+
+# Ansible fact cache
+fact_cache/
+
+# Host files with sensitive IPs (if applicable)
+# hosts.ini
+
+
+# ===================================================================
+#  Kubernetes & Cloud Native
+# ===================================================================
+# Kubernetes config files with credentials
+kubeconfig*
+*kubeconfig*
+.kube/config*
+
+# Helm values files with secrets
+*secrets*.yaml
+*secrets*.yml
+values-secrets.yaml
+
+# Docker config with registry credentials
+.docker/config.json
+
+
+# ===================================================================
+#  Cloud Provider Specific
+# ===================================================================
+# Google Cloud
+.gcp/
+google-cloud-credentials.json
+gcloud/
+
+# AWS
+.aws/credentials
+.aws/config
+
+# Azure
+.azure/
+
+# Cloudflare
+.cloudflare/
+
+
+# ===================================================================
+#  IDE and OS-specific
+# ===================================================================
+# Common IDE/editor directories
+.vscode/
+.idea/
+.project
+.pydevproject
+.settings/
+*.swp
+*.swo
+*~
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Windows
+*.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+
+
+# ===================================================================
+#  Development & Testing
+# ===================================================================
+# Test output
+test-results/
+coverage/
+*.coverage
+
+# Dependency directories
+node_modules/
+.npm/
+.yarn/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Go
+vendor/
+
+# Ruby
+.bundle/
+vendor/bundle/
+
+
+# ===================================================================
+#  Build & Distribution
+# ===================================================================
+# Build outputs
+dist/
+build/
+out/
+target/
+
+# Archives
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+
+# ===================================================================
+#  Monitoring & Observability
+# ===================================================================
+# Prometheus data
+prometheus-data/
+
+# Grafana data
+grafana-data/
+
+# Log aggregation
+logs/
+*.log.*
+
+
+# ===================================================================
+#  Backup Files
+# ===================================================================
+# Backup files
+*.backup
+*.bak
+*.old
+*backup*
+
+# Recovery files
+*.recover
+*.recovery
+
+
+# ===================================================================
+#  Documentation Generation
+# ===================================================================
+# Generated documentation
+docs/_build/
+site/
+.mkdocs/

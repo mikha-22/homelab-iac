@@ -1,0 +1,10 @@
+manual modification on UDP buffer for each node ->
+      
+sudo sysctl -w net.core.rmem_max=2500000
+
+to make permanent ->
+      
+echo 'net.core.rmem_max=2500000' | sudo tee -a /etc/sysctl.d/99-cloudflared.conf
+
+2. For health-checking on cloudflared tunnel pods, instead of doing http request /ready. We simply check if the TCP port listens or not.
+

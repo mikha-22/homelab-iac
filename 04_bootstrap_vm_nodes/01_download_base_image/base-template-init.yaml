@@ -1,0 +1,27 @@
+#cloud-config
+# Base template cloud-init for homelab VMs
+# This creates a clean Ubuntu template that Ansible will customize
+ssh_pwauth: false
+users:
+  - name: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${user_ssh_public_key}
+
+packages:
+  - qemu-guest-agent
+  - curl
+  - wget
+  - apt-transport-https
+  - ca-certificates
+  - software-properties-common
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  
+# Basic system optimization
+bootcmd:
+  - echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+  - echo 'net.bridge.bridge-nf-call-iptables = 1' >> /etc/sysctl.conf

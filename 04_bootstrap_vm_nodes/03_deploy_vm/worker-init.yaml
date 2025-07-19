@@ -1,0 +1,11 @@
+#cloud-config
+# This cloud-init configures the K3s worker node.
+# The SSH key is injected by Terraform from Google Secret Manager.
+hostname: dev-k3s-worker-01
+manage_etc_hosts: true
+ssh_authorized_keys:
+  - ${user_ssh_public_key}
+packages:
+  - qemu-guest-agent
+runcmd:
+  - systemctl enable --now qemu-guest-agent

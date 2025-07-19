@@ -1,0 +1,167 @@
+# ArgoCD configuration optimized for your homelab with Cloudflare
+global:
+  # Domain will be set via Terraform variable
+  domain: ""
+
+# Server configuration for insecure mode (Cloudflare TLS termination)
+server:
+  # CRITICAL: Insecure mode for Cloudflare compatibility
+  insecure: true
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    portName: http
+    
+  # Disable default ingress (we create our own)
+  ingress:
+    enabled: false
+    
+  # Metrics for monitoring
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false  # Enable if you have Prometheus Operator
+      
+  # FIXED: Remove --rootpath=/ as it causes issues with Traefik
+  extraArgs:
+    - --insecure
+
+  # Resource limits suitable for your homelab
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Application Controller
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+      
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# Repository Server
+repoServer:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+      
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Dex Server (OIDC) - minimal for homelab
+dex:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Redis configuration - disable HA for homelab
+redis:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Redis HA (disabled for homelab)
+redis-ha:
+  enabled: false  # Will be overridden by Terraform variable
+
+# Notifications
+notifications:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# ApplicationSet Controller
+applicationSet:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Configuration
+configs:
+  params:
+    # Server insecure mode - CRITICAL for Cloudflare
+    server.insecure: true
+    
+    # REMOVED: server.rootpath (causes issues with Traefik)
+    server.log.level: info
+    
+  # ADDED: ArgoCD server config map for URL
+  cm:
+    url: "https://argocd.milenika.dev"
+    users.anonymous.enabled: "true" # <--- ADD THIS LINE
+    
+  rbac:
+    # Default policy for security
+    policy.default: role:readonly
+    
+    # RBAC policy - customize as needed
+    policy.csv: |
+      # Admin role - full access
+      p, role:admin, applications, *, */*, allow
+      p, role:admin, clusters, *, *, allow
+      p, role:admin, repositories, *, *, allow
+      p, role:admin, certificates, *, *, allow
+      p, role:admin, projects, *, *, allow
+      p, role:admin, accounts, *, *, allow
+      p, role:admin, gpgkeys, *, *, allow
+      
+      # Developer role - limited access
+      p, role:developer, applications, get, */*, allow
+      p, role:developer, applications, sync, */*, allow
+      p, role:developer, applications, action/*, */*, allow
+      p, role:developer, repositories, get, *, allow
+      p, role:developer, projects, get, *, allow
+      
+      # Default admin group
+      g, argocd-admins, role:admin
+
+# Resource customizations
+crds:
+  install: true
+  keep: false
+
+# Global resource limits
+global:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    fsGroup: 999
