@@ -1,0 +1,23 @@
+Terraform modules are divided per folders, with one state-file.
+
+Terraform init loads the plugins/providers defined in the terraform.tf, configures the backend and the state file target,
+remote or local and creates a .terraform folder in the directory, (just like git init)
+
+While it is possible to create a single main.tf which contains everything, from terraform and provider config, variables,
+outputs, it's best practice to split them up.
+
+terraform.tf contains configuration for terraform, typically the version, the required providers to be installed, and
+its version, also the backend statefile target (local or remote)
+
+main.tf contains the main module logic, some data definition and loading, and the resource provisioning logic
+
+outputs.tf contains the output to be displayed after an execution (apply, destroy, etc) and also will be saved
+as an object in the statefile
+
+variables.tf contains the declaration of variables and typically its default values
+
+terraform.tfvars contains the actual values of the variables (typically environment specific, can have secrets, do not commit
+to git)
+
+providers.tf contains the configuration specific for certain providers.
+
