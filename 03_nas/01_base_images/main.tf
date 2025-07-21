@@ -5,6 +5,8 @@
 
 # --- DATA SOURCE TO FETCH PROXMOX API TOKEN ---
 # This data source is needed by the proxmox provider configuration.
+# We fetch the secret (proxmox api token) as a data, named "pm_api_token"
+# check providers.tf for usage
 data "google_secret_manager_secret_version" "pm_api_token" {
   secret = "proxmox-api-token"
 }
