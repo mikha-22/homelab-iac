@@ -5,7 +5,7 @@ users:
     groups: users, admin
     shell: /bin/bash
     ssh_authorized_keys:
-      - ${ssh_public_key}
+      - ${ssh_public_key} # the path will be supplied from the secret and the actual key will be rendered by terraform
 
 ssh_pwauth: false
 packages:

@@ -2,11 +2,11 @@
 #  K3S VM DEPLOYMENT - CLEAN VERSION
 # ===================================================================
 
-module "shared" {
+module "shared" { # load  shared module
   source = "../../shared"
 }
 
-data "terraform_remote_state" "base_template" {
+data "terraform_remote_state" "base_template" { # make base_template item from the other submodule accessible
   backend = "gcs"
   config = {
     bucket = "homelab-terraform-state-shared"
@@ -14,7 +14,7 @@ data "terraform_remote_state" "base_template" {
   }
 }
 
-locals {
+locals { # render the cloud init yaml for both nodes
   master_init_content = templatefile("${path.module}/master-init.yaml", {
     user_ssh_public_key = module.shared.nas_ssh_public_key
   })
@@ -22,7 +22,7 @@ locals {
     user_ssh_public_key = module.shared.nas_ssh_public_key
   })
 }
-
+# store the cloud init snippet for the master node
 resource "proxmox_virtual_environment_file" "master_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -33,7 +33,7 @@ resource "proxmox_virtual_environment_file" "master_cloud_init" {
     data      = local.master_init_content
   }
 }
-
+# store the cloud iniit snipper for the worker node
 resource "proxmox_virtual_environment_file" "worker_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -44,7 +44,7 @@ resource "proxmox_virtual_environment_file" "worker_cloud_init" {
     data      = local.worker_init_content
   }
 }
-
+# create vm configuration on pve1, master node
 resource "proxmox_virtual_environment_vm" "master" {
   name      = "dev-k3s-master-01"
   node_name = "pve1"
@@ -54,7 +54,7 @@ resource "proxmox_virtual_environment_vm" "master" {
   depends_on = [proxmox_virtual_environment_file.master_cloud_init]
 
   clone {
-    vm_id        = 9000
+    vm_id        = 9000 # hardcoded from previous step, template distribution, located on pve1
     full         = true
     datastore_id = "cluster-shared-nfs"
   }
@@ -69,7 +69,7 @@ resource "proxmox_virtual_environment_vm" "master" {
   }
 
   initialization {
-    user_data_file_id = proxmox_virtual_environment_file.master_cloud_init.id
+    user_data_file_id = proxmox_virtual_environment_file.master_cloud_init.id # use the cloud init
     dns { servers = module.shared.dns_servers }
     ip_config {
       ipv4 {
@@ -79,7 +79,7 @@ resource "proxmox_virtual_environment_vm" "master" {
     }
   }
 }
-
+# create worker node on pve2 by cloning the distributed template id 9010
 resource "proxmox_virtual_environment_vm" "worker" {
   name      = "dev-k3s-worker-01"
   node_name = "pve2"
@@ -114,7 +114,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
     }
   }
 }
-
+# just verification
 resource "null_resource" "verify_cluster_ready" {
   depends_on = [
     proxmox_virtual_environment_vm.master,
@@ -137,11 +137,11 @@ resource "null_resource" "verify_cluster_ready" {
     EOT
   }
 }
-
+# code block for dynamic ansible inventory file generation
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/../../05_k3s_ansible_bootstrap/inventory.yml.tpl", {
-    master_ip     = module.shared.network.k3s_master
-    worker_ip     = module.shared.network.k3s_worker_01
+    master_ip     = module.shared.network.k3s_master     # changes the values of the inventory.yml
+    worker_ip     = module.shared.network.k3s_worker_01  # according to these values in shared folder
     master_vm_id  = module.shared.vm_ids.k3s_master
     worker_vm_id  = module.shared.vm_ids.k3s_worker_01
     k3s_token     = module.shared.k3s_cluster_token

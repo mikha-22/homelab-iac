@@ -15,7 +15,7 @@ variable "region" {
   type        = string
   default     = "asia-southeast1"
 }
-
+# IS ALSO USED FOR NAS VM PUBLIC KEY, CHECK IN main.tf
 variable "ssh_public_key_path" { # this variable contains the path for the key, later will be processed in main.tf
   description = "Path to SSH public key for VM access"
   type        = string

@@ -1,6 +1,5 @@
 #cloud-config
 # Base template cloud-init for homelab VMs
-# This creates a clean Ubuntu template that Ansible will customize
 ssh_pwauth: false
 users:
   - name: ubuntu
