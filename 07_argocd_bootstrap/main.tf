@@ -35,14 +35,14 @@ resource "helm_release" "argocd" {
   values = [
     file("${path.module}/values/argocd-values.yaml")
   ]
-
+/* #disabled for now because the gcsm password doesn't work
   set_sensitive = [
     {
       name  = "configs.secret.argocdServerAdminPassword"
       value = module.shared.argocd_admin_password
     }
   ]
-
+*/
   set = [
     {
       name  = "configs.cm.url"
