@@ -176,3 +176,23 @@ resource "google_secret_manager_secret_version" "tunnel_cname_secret_version" {
     google_secret_manager_secret.tunnel_cname_secret
   ]
 }
+# Create a Kubernetes ConfigMap to store the tunnel CNAME for other apps to use
+resource "kubernetes_config_map" "cloudflare_cname" {
+  metadata {
+    name      = "cloudflare-config"
+    namespace = "kube-system" # A shared, well-known namespace
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+      "app.kubernetes.io/part-of"    = "homelab-iac"
+    }
+  }
+
+  data = {
+    # The key 'cname' will hold the tunnel's CNAME value
+    "cname" = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
+  }
+
+  # Make sure this runs after the tunnel is created
+  depends_on = [cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel]
+}
+

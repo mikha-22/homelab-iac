@@ -3,6 +3,9 @@
 .terraform.lock.hcl
 **/terraform.tfvars
 
+# Ansible sensitive files
+*/inventory.yml
+
 # ===================================================================
 #  Default Git / Repo-specific
 # ===================================================================

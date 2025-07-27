@@ -1,0 +1,152 @@
+# HOMELAB PREREQUISITES
+# Complete this checklist before running ./scripts/deploy-all.sh
+
+================================================================================
+1. PROXMOX CLUSTER SETUP
+================================================================================
+
+# Install Proxmox VE on two physical machines (pve1, pve2)
+# On pve1:
+pvecm create homelab-cluster
+
+# On pve2:
+pvecm add pve1.local
+# Or use IP address instead, e.g. pvecm add 192.168.181
+# if using the domain name fails, then we need to add it to /etc/hosts
+
+# Verify cluster:
+pvecm status
+
+# Test SSH access from your workstation:
+ssh root@pve1.local "hostname"
+ssh root@pve2.local "hostname"
+
+================================================================================
+2. GOOGLE CLOUD PROJECT
+================================================================================
+
+# Install gcloud CLI, then:
+gcloud projects create homelab-secret-manager
+gcloud config set project homelab-secret-manager
+
+# Enable required APIs:
+gcloud services enable secretmanager.googleapis.com
+gcloud services enable storage.googleapis.com
+gcloud services enable iam.googleapis.com
+
+# Authenticate with your Google account:
+gcloud auth application-default login
+
+# Test authentication:
+gcloud auth application-default print-access-token
+
+# Verify project access:
+gcloud projects describe homelab-secret-manager
+
+================================================================================
+3. CLOUDFLARE SETUP
+================================================================================
+
+# Manual steps (via web UI):
+# 1. Register domain (e.g., milenika.dev)
+# 2. Change nameservers to Cloudflare # For Cloudflare and ExternalDNS to have authority over the domain
+# 3. Go to My Profile → API Tokens → Create Token # Access token for ExternalDNS
+#    Permissions needed:
+#    - Zone:Zone:Read
+#    - Zone:DNS:Edit  
+#    - Account:Cloudflare Tunnel:Edit
+# 4. Copy Account ID from dashboard sidebar ## To determine target on the provider configuration on the cloudflare module
+
+================================================================================
+4. SSH KEYS SETUP
+================================================================================
+
+# Generate VM access key:
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" # Option -N "" is to remove passphrase to avoid being prompted
+
+# Generate Proxmox access key:
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/proxmox_terraform -N ""
+
+# Copy Proxmox key to both nodes:
+ssh-copy-id -i ~/.ssh/proxmox_terraform.pub root@pve1.local
+ssh-copy-id -i ~/.ssh/proxmox_terraform.pub root@pve2.local
+
+# Test SSH access:
+ssh -i ~/.ssh/proxmox_terraform root@pve1.local "pvesm status"
+ssh -i ~/.ssh/proxmox_terraform root@pve2.local "pvesm status"
+
+================================================================================
+5. PROXMOX API TOKEN
+================================================================================
+
+# Via Proxmox web UI (https://pve1.local:8006):
+# 1. Go to Datacenter → Permissions → API Tokens
+# 2. Add new token:
+#    - User: root@pam
+#    - Token ID: terraform
+#    - Privilege Separation: Unchecked (disabled)
+# 3. Copy the full token format: root@pam!terraform=xxxxxxxx-xxxx-xxxx
+
+# Test API access:
+curl -k -H "Authorization: PVEAPIToken=YOUR_TOKEN_HERE" \
+  https://pve1.local:8006/api2/json/version
+
+================================================================================
+6. INSTALL TOOLS
+================================================================================
+
+# Terraform:
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install terraform
+
+# kubectl:
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Ansible:
+sudo apt update && sudo apt install ansible
+ansible-galaxy collection install kubernetes.core
+
+# Verify installations:
+terraform version
+kubectl version --client
+ansible --version
+
+================================================================================
+7. GENERATE PASSWORDS
+================================================================================
+
+# Generate secure passwords:
+openssl rand -base64 32  # For ArgoCD admin password, check 02_ .tfvars
+openssl rand -base64 32  # For K3s cluster token
+
+================================================================================
+8. CREATE TERRAFORM VARIABLES
+================================================================================
+
+# Create file: 02_google_secret_manager/terraform.tfvars
+# check terraform.tfvars for the example and then replace values with your actual data
+# For proxmox-ssh-private-key:
+cat ~/.ssh/proxmox_terraform
+
+# For nas-vm-ssh-key:
+cat ~/.ssh/id_rsa.pub
+
+================================================================================
+9. NETWORK VERIFICATION
+================================================================================
+
+# Check if target IPs are available (these should FAIL):
+ping -c 1 192.168.1.225  # NAS server IP
+ping -c 1 192.168.1.181  # K3s master IP
+ping -c 1 192.168.1.182  # K3s worker IP
+
+# Verify Proxmox nodes are reachable:
+ping -c 1 pve1.local
+ping -c 1 pve2.local
+
+# If DNS fails, add to /etc/hosts:
+sudo sh -c 'echo "YOUR_PVE1_IP pve1.local" >> /etc/hosts'
+sudo sh -c 'echo "YOUR_PVE2_IP pve2.local" >> /etc/hosts'
+===============================================================================

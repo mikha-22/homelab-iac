@@ -11,6 +11,10 @@ data "google_secret_manager_secret_version" "tunnel_cname" {
   secret = "tunnel-cname"
 }
 
+data "google_secret_manager_secret_version" "argocd_admin_password" {
+  secret = "argocd-admin-password"
+}
+
 locals {
   argocd_hostname = var.argocd_hostname != "" ? var.argocd_hostname : "argocd.${module.shared.domain}"
 }
@@ -35,14 +39,14 @@ resource "helm_release" "argocd" {
   values = [
     file("${path.module}/values/argocd-values.yaml")
   ]
-/* #disabled for now because the gcsm password doesn't work
-  set_sensitive = [
-    {
-      name  = "configs.secret.argocdServerAdminPassword"
-      value = module.shared.argocd_admin_password
-    }
-  ]
-*/
+
+set_sensitive = [
+  {
+    name  = "configs.secret.argocdServerAdminPassword"
+    value = bcrypt(trimspace(data.google_secret_manager_secret_version.argocd_admin_password.secret_data))
+  }
+]
+  
   set = [
     {
       name  = "configs.cm.url"
