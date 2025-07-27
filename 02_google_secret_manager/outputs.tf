@@ -22,11 +22,3 @@ output "next_steps" {
     test_access      = "gcloud secrets versions access latest --secret=proxmox-api-token --project=${var.project_id}"
   }
 }
-
-output "project_info" {
-  description = "Project information for other modules"
-  value = {
-    project_id     = var.project_id
-    project_number = data.google_project.current.number
-  }
-}

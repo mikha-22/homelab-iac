@@ -2,8 +2,7 @@
 #  SIMPLIFIED SECRET MANAGER VARIABLES
 #  Removed unnecessary complexity for homelab use
 # ===================================================================
-
-variable "project_id" { # declares a variable named project_id, description for this variable, the data type, and then
+ variable "project_id" { # declares a variable named project_id, description for this variable, the data type, and then
                         # the default value if its not overridden  
   description = "GCP Project ID"
   type        = string

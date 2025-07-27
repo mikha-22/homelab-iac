@@ -4,21 +4,16 @@
 #  UPDATED: Handle SSH key file reading in main.tf
 # ===================================================================
 
-# --- DATA SOURCES ---
-data "google_project" "current" { # declaring a data to be used later on, data.google_project.current.project_id
-  project_id = var.project_id # var. means fetching from variable types, in this case-- written in variables.tf
-}
-
 # --- LOCALS ---
 # Read SSH key file in main.tf, not tfvars
-locals { # this is a logic to merge the secrets into a single local value, local.all_secrets
+locals {               # this is a logic to merge the secrets into a single local value, local.all_secrets
   all_secrets = merge( # contains var.secrets (populated by .tfvars for the actual values) with 
     var.secrets,       # appended ssh keys by processing the path for both, 
     
     # Add the user SSH key secret if a path is provided
     var.ssh_public_key_path != "" ? { # terraform can handle logical statements, if not empty then do ->
       "nas-vm-ssh-key" = {
-        secret_data = file(var.ssh_public_key_path) # file() is basically do a shell cat to the file in the path 
+        secret_data = file(var.ssh_public_key_path) # file() is do shell cat to the file in the path 
         description = "Public SSH key for all VM user access, managed by Terraform."
       }
     } : {}, # else do nothing
@@ -62,7 +57,7 @@ resource "google_secret_manager_secret" "homelab_secrets" {
     managed_by  = "terraform"
     component   = "secrets"
   }
-
+# High Availability, multi region replication
   replication {
     auto {}
   }

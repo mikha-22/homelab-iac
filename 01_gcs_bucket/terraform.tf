@@ -1,5 +1,6 @@
 
 terraform {                          # means we're configuring the terraform for this module
+  required_version = ">= 1.5.0" 
   required_providers {               # setting the providers
     google = {                       # declaring the provider
       source  = "hashicorp/google"   # source is from the org hashicorp, the name of the provider is google
