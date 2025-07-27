@@ -1,4 +1,8 @@
 # --- GOOGLE PROVIDER FOR FETCHING SECRETS ---
+data "google_secret_manager_secret_version" "pm_api_token" {
+  secret = "proxmox-api-token"
+}
+
 provider "google" {
   project = "homelab-secret-manager"
 }
