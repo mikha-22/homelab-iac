@@ -1,19 +1,9 @@
-# ===================================================================
-#  K3S VM DEPLOYMENT - CLEAN VERSION
-# ===================================================================
-
+# Load shared module
 module "shared" {
   source = "../../shared"
 }
 
-data "terraform_remote_state" "base_template" {
-  backend = "gcs"
-  config = {
-    bucket = "homelab-terraform-state-shared"
-    prefix = "04_bootstrap_vm_nodes/01_download_base_image"
-  }
-}
-
+# Render the cloud init for both nodes, assign the ssh key
 locals {
   master_init_content = templatefile("${path.module}/master-init.yaml", {
     user_ssh_public_key = module.shared.nas_ssh_public_key
@@ -23,6 +13,7 @@ locals {
   })
 }
 
+# Store the cloud init master snippet to nfs
 resource "proxmox_virtual_environment_file" "master_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -34,6 +25,7 @@ resource "proxmox_virtual_environment_file" "master_cloud_init" {
   }
 }
 
+# Store the cloud init worker snippet to nfs
 resource "proxmox_virtual_environment_file" "worker_cloud_init" {
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
@@ -45,9 +37,11 @@ resource "proxmox_virtual_environment_file" "worker_cloud_init" {
   }
 }
 
+# Provision the master node using preivous template
 resource "proxmox_virtual_environment_vm" "master" {
   name      = "dev-k3s-master-01"
   node_name = "pve1"
+  # Check shared module for vm id, this one is set to 181
   vm_id     = module.shared.vm_ids.k3s_master
   tags      = concat(module.shared.common_tags, module.shared.role_tags.k3s_master)
 
@@ -70,7 +64,7 @@ resource "proxmox_virtual_environment_vm" "master" {
     bridge = "vmbr0"
     model  = "virtio"
   }
-
+  # Use the rendered master cloud init
   initialization {
     user_data_file_id = proxmox_virtual_environment_file.master_cloud_init.id
     dns { servers = module.shared.dns_servers }
@@ -83,9 +77,11 @@ resource "proxmox_virtual_environment_vm" "master" {
   }
 }
 
+# Provision worker node machine
 resource "proxmox_virtual_environment_vm" "worker" {
   name      = "dev-k3s-worker-01"
   node_name = "pve2"
+  # Check shared module, default vm_id for worker node_01 is 182
   vm_id     = module.shared.vm_ids.k3s_worker_01
   tags      = concat(module.shared.common_tags, module.shared.role_tags.k3s_worker)
 
@@ -121,6 +117,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
   }
 }
 
+# Verifications
 resource "null_resource" "verify_cluster_ready" {
   depends_on = [
     proxmox_virtual_environment_vm.master,
@@ -144,6 +141,7 @@ resource "null_resource" "verify_cluster_ready" {
   }
 }
 
+# Fill the ansible template values, and generate the actual inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/../../05_k3s_ansible_bootstrap/inventory.yml.tpl", {
     master_ip    = module.shared.network.k3s_master

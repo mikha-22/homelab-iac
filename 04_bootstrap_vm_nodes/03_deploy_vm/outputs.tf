@@ -40,13 +40,3 @@ output "next_steps" {
     copy_kubeconfig = "scp ubuntu@${module.shared.network.k3s_master}:/etc/rancher/k3s/k3s.yaml ~/.kube/config"
   }
 }
-
-output "troubleshooting" {
-  description = "Debug commands"
-  value = {
-    ping_master = "ping ${module.shared.network.k3s_master}"
-    ping_worker = "ping ${module.shared.network.k3s_worker_01}"
-    vm_status   = "ssh root@pve1.local 'qm list | grep -E \"${module.shared.vm_ids.k3s_master}|${module.shared.vm_ids.k3s_worker_01}\"'"
-    ansible_test = "cd ../../05_k3s_ansible_bootstrap && ansible all -m ping"
-  }
-}
