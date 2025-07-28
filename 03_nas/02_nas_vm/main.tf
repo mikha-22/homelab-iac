@@ -1,12 +1,12 @@
 # ===================================================================
 #  NAS VM - CLEAN CONFIGURATION
 # ===================================================================
-
-module "shared" { # loading shared modules
+# Loading shared modules
+module "shared" { 
   source = "../../shared"
 }
-
-data "terraform_remote_state" "images" { # fetching the remote state of previous module to get information of the image
+# Fetching the remote state of previous module to get information of the image
+data "terraform_remote_state" "images" { 
   backend = "gcs"
   config = {
     bucket = "homelab-terraform-state-shared"
@@ -15,18 +15,21 @@ data "terraform_remote_state" "images" { # fetching the remote state of previous
 }
 
 locals {
-  nas_cloud_init_content = templatefile("${path.module}/nas-cloud-init.yaml", { # templatefile renders the init yaml
-    ssh_public_key = module.shared.nas_ssh_public_key # fetches the ssh public key, check the shared folder
+  # Templatefile renders the init yaml
+  nas_cloud_init_content = templatefile("${path.module}/nas-cloud-init.yaml", { 
+    # Fetches the ssh public key, check the shared folder
+    ssh_public_key = module.shared.nas_ssh_public_key 
   })
 }
-
-resource "proxmox_virtual_environment_file" "nas_cloud_init" { # store the cloud init on local disk pve1
+# Store the cloud init on local disk pve1
+resource "proxmox_virtual_environment_file" "nas_cloud_init" { 
   content_type = "snippets"
   datastore_id = "local"
   node_name    = "pve1"
 
   source_raw {
-    file_name = "nas-cloud-init-rendered.yaml" # store as this name, with contents from content in the above block
+    # Store as this name, with contents fron the above block
+    file_name = "nas-cloud-init-rendered.yaml"
     data      = local.nas_cloud_init_content
   }
 }
@@ -34,8 +37,9 @@ resource "proxmox_virtual_environment_file" "nas_cloud_init" { # store the cloud
 resource "proxmox_virtual_environment_vm" "nfs_server" {
   name        = "nfs-server-01"
   description = "NFS server for Proxmox cluster shared storage"
-  tags        = concat(module.shared.common_tags, module.shared.role_tags.nas) # example of using shared folder as
-  node_name   = "pve1"                                                         # single source of configuration
+  # Using shared folder as single source of configuration
+  tags        = concat(module.shared.common_tags, module.shared.role_tags.nas) 
+  node_name   = "pve1"
   vm_id       = module.shared.vm_ids.nas_server
 
   depends_on = [proxmox_virtual_environment_file.nas_cloud_init]
@@ -86,15 +90,15 @@ resource "proxmox_virtual_environment_vm" "nfs_server" {
 
 resource "null_resource" "register_nfs_storage" {
   depends_on = [proxmox_virtual_environment_vm.nfs_server]
-
-  triggers = { # triggers are IF any of these variable changes compared to whats in the state file, then DO ->
+  # triggers are IF any of these variable changes compared to whats in the state file, then DO ->
+  triggers = { 
     vm_id = proxmox_virtual_environment_vm.nfs_server.id
-    nas_ip = module.shared.network.nas_server
+    # nas_ip = module.shared.network.nas_server
     proxmox_ssh_key = sensitive(trimspace(data.google_secret_manager_secret_version.pm_ssh_private_key.secret_data))
   }
-
-  provisioner "local-exec" { # since there's no provider, we use null_resource and local-exec or remote-exec to do bash
-                             # ssh key for this node is set on the providers.tf so later we can change to remote-exec
+# Since there's no provider, we use null_resource and local-exec or remote-exec to do bash
+# SSH key for this node is set on the providers.tf so later we can change to remote-exec
+  provisioner "local-exec" { 
     command = <<-EOT
       echo "Waiting for NAS VM to boot and NFS service to start..."
       timeout 120 bash -c '
@@ -113,7 +117,8 @@ resource "null_resource" "register_nfs_storage" {
 
   provisioner "local-exec" {
     environment = {
-      SSH_KEY_CONTENT = self.triggers.proxmox_ssh_key # set the environment variable for ssh key
+      # Set the environment variable for ssh key
+      SSH_KEY_CONTENT = self.triggers.proxmox_ssh_key 
     }
     command = <<-EOT
       echo "Registering NFS storage in Proxmox cluster..."
@@ -139,7 +144,8 @@ resource "null_resource" "register_nfs_storage" {
   }
 
   provisioner "local-exec" {
-    when = destroy # only do when destroy, basically reversing the apply
+    # Only do when destroy, basically reversing the apply
+    when = destroy 
     environment = {
       SSH_KEY_CONTENT = self.triggers.proxmox_ssh_key
     }
@@ -166,7 +172,8 @@ resource "null_resource" "register_nfs_storage" {
   }
 }
 
-resource "null_resource" "verify_nas_connectivity" { # check connectivity
+resource "null_resource" "verify_nas_connectivity" { 
+  # Check connectivity
   depends_on = [
     proxmox_virtual_environment_vm.nfs_server,
     null_resource.register_nfs_storage
