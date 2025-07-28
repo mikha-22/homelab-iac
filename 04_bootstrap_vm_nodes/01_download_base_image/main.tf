@@ -1,12 +1,8 @@
-# ===================================================================
-#  PHASE 1: CREATE BASE TEMPLATE ON SHARED STORAGE
-# ===================================================================
-
 module "shared" {
   source = "../../shared"
 }
-
-data "terraform_remote_state" "base_images" { # fetch the same base image used in nas
+# Fetch the same base image used in nas
+data "terraform_remote_state" "base_images" { 
   backend = "gcs"
   config = {
     bucket = "homelab-terraform-state-shared"
@@ -19,8 +15,8 @@ locals {
     user_ssh_public_key = module.shared.nas_ssh_public_key
   })
 }
-
-resource "proxmox_virtual_environment_file" "base_template_init" { # store cloud-init snippet on the nfs
+# Store cloud-init snippet on the nfs
+resource "proxmox_virtual_environment_file" "base_template_init" { 
   content_type = "snippets"
   datastore_id = "cluster-shared-nfs"
   node_name    = "pve1"
@@ -30,8 +26,8 @@ resource "proxmox_virtual_environment_file" "base_template_init" { # store cloud
     data      = local.base_template_init_content
   }
 }
-
-resource "proxmox_virtual_environment_vm" "base_cloud_template" { # create vm template, this configuration is still on pve1
+# Create vm template, this configuration is still on pve1
+resource "proxmox_virtual_environment_vm" "base_cloud_template" { 
   name        = "ubuntu-2404-cloud-base"
   description = "Base cloud-image template on shared storage"
   node_name   = "pve1"

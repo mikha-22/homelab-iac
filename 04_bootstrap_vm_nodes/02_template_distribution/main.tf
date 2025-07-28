@@ -7,8 +7,8 @@ resource "null_resource" "move_to_shared_storage" {
   triggers = {
     template_id = module.shared.vm_ids.base_template
   }
-
-  provisioner "local-exec" { # can be changed to root exec later
+  # Can be changed to root exec later
+  provisioner "local-exec" { 
     command = <<-EOT
       ssh -o StrictHostKeyChecking=no root@pve1.local \
         "qm disk move ${module.shared.vm_ids.base_template} scsi0 cluster-shared-nfs --format qcow2"
