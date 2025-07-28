@@ -1,19 +1,16 @@
-# ===================================================================
-#  PROJECT: Google Secret Manager for Homelab
-#  Creates Secret Manager secrets and service account for ESO integration
-#  UPDATED: Handle SSH key file reading in main.tf
-# ===================================================================
-
-# --- LOCALS ---
 # Read SSH key file in main.tf, not tfvars
-locals {               # this is a logic to merge the secrets into a single local value, local.all_secrets
-  all_secrets = merge( # contains var.secrets (populated by .tfvars for the actual values) with 
-    var.secrets,       # appended ssh keys by processing the path for both, 
-    
+# this is a logic to merge the secrets into a single local value, local.all_secrets
+# contains var.secrets (populated by .tfvars for the actual values) with 
+# appended ssh keys by processing the path for both, 
+locals {
+  all_secrets = merge( 
+    var.secrets,
     # Add the user SSH key secret if a path is provided
-    var.ssh_public_key_path != "" ? { # terraform can handle logical statements, if not empty then do ->
+    var.ssh_public_key_path != "" ? { 
+      # terraform can handle logical statements, if not empty then do ->
       "nas-vm-ssh-key" = {
-        secret_data = file(var.ssh_public_key_path) # file() is do shell cat to the file in the path 
+        # file() is do shell cat to the file in the path 
+        secret_data = file(var.ssh_public_key_path) 
         description = "Public SSH key for all VM user access, managed by Terraform."
       }
     } : {}, # else do nothing
@@ -32,25 +29,28 @@ locals {               # this is a logic to merge the secrets into a single loca
 # --- ENABLE APIS ---
 resource "google_project_service" "secretmanager" {
   service = "secretmanager.googleapis.com"
-  
-  disable_dependent_services = true # Is ignored because disable on destroy is set on false
-  disable_on_destroy         = false # This means that if we do terraform destroy, do not actually disable the service/api
-                                     # instead, just remove it from state file
+  # it is currently ignored because disable on destroy is set on false  
+  disable_dependent_services = true # 
+  # This means that if we do terraform destroy, do not actually disable the service/api
+  # instead, just remove it from state file
+  disable_on_destroy         = false 
+
 }
 
 resource "google_project_service" "iam" {
   service = "iam.googleapis.com"
-  
-  disable_dependent_services = true # if the disable_on_destroy is set on true, every other service that's dependent on this
-                                    # will also be disabled, e.g. disabling cloud functions also disabling cloud build
+  # if the disable_on_destroy is set on true, every other service that's dependent on this
+  # will also be disabled, e.g. disabling cloud functions also disabling cloud build
+  disable_dependent_services = true 
   disable_on_destroy         = false
 }
 
 # --- SECRET MANAGER -- CREATE SLOTS FOR SECRETS ---
 resource "google_secret_manager_secret" "homelab_secrets" {
-  for_each = local.all_secrets # terraform loop logic, the single object (map) is called by using each.
-
-  secret_id = each.key # each.key means the key e.g. proxmox-api-token key = {value}
+  # terraform loop logic, the single object (map) is called by using each.
+  for_each = local.all_secrets 
+  # each.key means the key e.g. proxmox-api-token key = {value}
+  secret_id = each.key 
   
   labels = {
     environment = "homelab"
@@ -62,16 +62,19 @@ resource "google_secret_manager_secret" "homelab_secrets" {
     auto {}
   }
 
-  depends_on = [google_project_service.secretmanager] # executed AFTER the google_project_service.secretmanager resource
+  depends_on = [google_project_service.secretmanager] 
+  # executed AFTER the google_project_service.secretmanager resource
 }
 
-resource "google_secret_manager_secret_version" "homelab_secret_versions" { # after the slot is created, we populate it
-  for_each = local.all_secrets                                              # with versions containg the secret data
-
-  secret      = google_secret_manager_secret.homelab_secrets[each.key].name # fetch the slot/container name
-  secret_data = each.value.secret_data # assigns the value of the secret data for that particular secret
-                                       # notice it uses value.secret_data, because secret_data is an attribute which is a
-                                       # part of the object value.
+resource "google_secret_manager_secret_version" "homelab_secret_versions" { 
+  # after the slot is created, we populate it with versions containg the secret data
+  for_each = local.all_secrets
+  # fetch the slot/container name
+  secret      = google_secret_manager_secret.homelab_secrets[each.key].name
+  # assigns the value of the secret data for that particular secret
+  secret_data = each.value.secret_data 
+# notice it uses value.secret_data, because secret_data is an attribute which is a
+# part of the object value.
 } 
 
 # --- SERVICE ACCOUNT FOR EXTERNAL SECRETS OPERATOR ---

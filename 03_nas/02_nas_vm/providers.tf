@@ -3,6 +3,14 @@
 #  FIXED: Uses correct data source references that match main.tf
 # ===================================================================
 
+data "google_secret_manager_secret_version" "pm_api_token" { # fetching gcs secrets
+  secret = "proxmox-api-token"
+}
+
+data "google_secret_manager_secret_version" "pm_ssh_private_key" {
+  secret = "proxmox-ssh-private-key"
+}
+
 # --- PROVIDER CONFIGURATIONS ---
 provider "google" {
   project = "homelab-secret-manager"

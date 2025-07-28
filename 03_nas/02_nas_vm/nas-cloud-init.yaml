@@ -1,21 +1,32 @@
 #cloud-config
 users:
   - name: mikha
-    sudo: ALL=(ALL) NOPASSWD:ALL
+    # Run command as any user, in any group, disable sudo password prompt for automation
+    sudo: ALL=(ALL) NOPASSWD:ALL 
+    # This user is a member of users and admin group
     groups: users, admin
+    # Default shell
     shell: /bin/bash
+    # Feed the key
     ssh_authorized_keys:
-      - ${ssh_public_key} # the path will be supplied from the secret and the actual key will be rendered by terraform
-
+    # The path will be supplied from the secret and the actual key will be rendered by terraform
+      - ${ssh_public_key}
+# Disable SSH password authentication
 ssh_pwauth: false
+# Install these packages, nfs is for NAS, qemu is the bridge for communication between proxmox and guest vm 
 packages:
   - nfs-kernel-server
   - qemu-guest-agent
 runcmd:
+  # enables the qemu to run by default on every boot
   - systemctl enable --now qemu-guest-agent
   - mkdir -p /export/proxmox-storage
+  # Change ownership and permisssion of the storage, anonymous access and  making it permissive
   - chown nobody:nogroup /export/proxmox-storage
   - chmod 777 /export/proxmox-storage
+  # Permanently store the configuration of this NAS
   - 'echo "/export/proxmox-storage *(rw,sync,no_subtree_check,no_root_squash)" > /etc/exports'
+  # Exports all directories listed in '/etc/exports', making the NFS share immediately available without a full reboot
   - exportfs -a
+  # Restart the nfs service to apply configuration
   - systemctl restart nfs-kernel-server

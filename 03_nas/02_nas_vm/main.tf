@@ -6,14 +6,6 @@ module "shared" { # loading shared modules
   source = "../../shared"
 }
 
-data "google_secret_manager_secret_version" "pm_api_token" { # fetching gcs secrets
-  secret = "proxmox-api-token"
-}
-
-data "google_secret_manager_secret_version" "pm_ssh_private_key" {
-  secret = "proxmox-ssh-private-key"
-}
-
 data "terraform_remote_state" "images" { # fetching the remote state of previous module to get information of the image
   backend = "gcs"
   config = {
