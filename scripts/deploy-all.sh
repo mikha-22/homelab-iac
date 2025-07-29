@@ -1,7 +1,8 @@
 #!/bin/bash
 # ===================================================================
-#  HOMELAB DEPLOYMENT SCRIPT
+#  HOMELAB DEPLOYMENT SCRIPT - FINAL FIXED VERSION
 #  Deploy the entire homelab infrastructure in the correct order
+#  FIXED: Updated all paths to match actual directory structure
 # ===================================================================
 
 set -e
@@ -37,7 +38,7 @@ run_ansible() {
     echo "Running Ansible K3s setup..."
     echo "----------------------------------------"
 
-    cd "05_k3s_ansible_bootstrap"
+    cd "05_k3s_ansible"
     ansible-playbook k3s.orchestration.site
     cd - > /dev/null
 
@@ -50,21 +51,21 @@ if [[ ! -f "01_gcs_bucket/main.tf" ]]; then
     exit 1
 fi
 
-# Deployment sequence
+# Deployment sequence - FINAL FIXED PATHS
 echo "Starting deployment sequence..."
 
 deploy_module "01_gcs_bucket" "GCS Backend"
 deploy_module "02_google_secret_manager" "Secret Manager"
 deploy_module "03_nas/01_base_images" "Base Images"
 deploy_module "03_nas/02_nas_vm" "NAS Server"
-deploy_module "04_bootstrap_vm_nodes/01_download_base_image" "Base Template"
-deploy_module "04_bootstrap_vm_nodes/02_template_distribution" "Template Distribution"
-deploy_module "04_bootstrap_vm_nodes/03_deploy_vm" "K3s VMs"
+deploy_module "04_vm_nodes/01_download_base_image" "Base Template"
+deploy_module "04_vm_nodes/02_template_distribution" "Template Distribution"
+deploy_module "04_vm_nodes/03_deploy_vm" "K3s VMs"
 
 run_ansible
 
 deploy_module "06_cloudflare_tunnel" "Cloudflare Tunnel"
-deploy_module "07_argocd_bootstrap" "ArgoCD"
+deploy_module "07_argocd" "ArgoCD"
 deploy_module "08_external_secrets_operator" "External Secrets Operator"
 
 echo ""

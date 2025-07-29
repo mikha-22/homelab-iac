@@ -1,14 +1,11 @@
 # ===================================================================
-#  BASE IMAGE DOWNLOAD PROVIDERS
+#  BASE IMAGE DOWNLOAD PROVIDERS - FIXED TO USE SHARED MODULE
+#  Removed duplicate data sources, now uses shared module
 # ===================================================================
 
-# Data sources for authentication
-data "google_secret_manager_secret_version" "pm_api_token" {
-  secret = "proxmox-api-token"
-}
-
-data "google_secret_manager_secret_version" "pm_ssh_private_key" {
-  secret = "proxmox-ssh-private-key"
+# Load shared module for centralized secret management
+module "shared" {
+  source = "../../shared"
 }
 
 # --- PROVIDER CONFIGURATIONS ---
@@ -20,10 +17,10 @@ provider "google" {
 provider "proxmox" {
   endpoint  = "https://pve1.local:8006"
   insecure  = true
-  api_token = trimspace(data.google_secret_manager_secret_version.pm_api_token.secret_data)
+  api_token = module.shared.proxmox_api_token
   
   ssh {
     username    = "root"
-    private_key = trimspace(data.google_secret_manager_secret_version.pm_ssh_private_key.secret_data)
+    private_key = module.shared.proxmox_ssh_private_key
   }
 }

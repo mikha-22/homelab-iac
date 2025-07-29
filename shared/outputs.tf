@@ -1,7 +1,9 @@
 # ===================================================================
-#  SHARED MODULE: OUTPUTS
+#  SHARED MODULE: OUTPUTS - FIXED
+#  Added proxmox_api_token output so modules can use shared version
 # ===================================================================
 
+# Network Configuration
 output "network" {
   value = local.network
 }
@@ -22,6 +24,7 @@ output "gateway" {
   value = local.network.gateway
 }
 
+# VM Configuration
 output "vm_configs" {
   value = local.vm_configs
 }
@@ -30,6 +33,7 @@ output "vm_ids" {
   value = local.vm_ids
 }
 
+# Tags
 output "common_tags" {
   value = local.common_tags
 }
@@ -38,11 +42,18 @@ output "role_tags" {
   value = local.role_tags
 }
 
+# SSH Commands
 output "ssh_commands" {
   value = local.ssh_commands
 }
 
-# Secrets
+# Secrets (Sensitive)
+output "proxmox_api_token" {
+  description = "Proxmox API token for provider authentication"
+  value       = trimspace(data.google_secret_manager_secret_version.pm_api_token.secret_data)
+  sensitive   = true
+}
+
 output "nas_ssh_public_key" {
   value     = trimspace(data.google_secret_manager_secret_version.nas_ssh_key.secret_data)
   sensitive = true

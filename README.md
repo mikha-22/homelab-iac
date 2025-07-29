@@ -27,12 +27,12 @@ cd 01_gcs_bucket && terraform init && terraform apply
 cd ../02_google_secret_manager && terraform init && terraform apply
 cd ../03_nas/01_base_images && terraform init && terraform apply
 cd ../02_nas_vm && terraform init && terraform apply
-cd ../../../04_bootstrap_vm_nodes/01_download_base_image && terraform init && terraform apply
+cd ../../04_vm_nodes/01_download_base_image && terraform init && terraform apply
 cd ../02_template_distribution && terraform init && terraform apply
 cd ../03_deploy_vm && terraform init && terraform apply
-cd ../../05_k3s_ansible_bootstrap && ansible-playbook k3s.orchestration.site
+cd ../../05_k3s_ansible && ansible-playbook k3s.orchestration.site
 cd ../06_cloudflare_tunnel && terraform init && terraform apply
-cd ../07_argocd_bootstrap && terraform init && terraform apply
+cd ../07_argocd && terraform init && terraform apply
 cd ../08_external_secrets_operator && terraform init && terraform apply
 ```
 

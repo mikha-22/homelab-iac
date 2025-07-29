@@ -1,12 +1,8 @@
 # ===================================================================
-#  PROJECT: BASE IMAGES
+#  PROJECT: BASE IMAGES - UPDATED
 #  Manages the downloading of OS images to Proxmox.
+#  Shared module is now loaded in providers.tf, not here
 # ===================================================================
-
-# --- DATA SOURCE TO FETCH PROXMOX API TOKEN ---
-# This data source is needed by the proxmox provider configuration.
-# We fetch the secret (proxmox api token) as a data, named "pm_api_token"
-# check providers.tf for usage
 
 # --- IMAGE DOWNLOAD RESOURCE ---
 resource "proxmox_virtual_environment_download_file" "ubuntu_noble" {

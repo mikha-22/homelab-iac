@@ -3,7 +3,7 @@ terraform {
   
   backend "gcs" {
     bucket = "homelab-terraform-state-shared"
-    prefix = "04_bootstrap_vm_nodes/01_download_base_image"
+    prefix = "04_vm_nodes/01_download_base_image"  # FIXED: was 04_bootstrap_vm_nodes
   }
   
   required_providers {
