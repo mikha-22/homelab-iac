@@ -1,7 +1,3 @@
-# ===================================================================
-#  EXTERNAL SECRETS OPERATOR OUTPUTS - ESSENTIAL ONLY
-# ===================================================================
-
 output "external_secrets" {
   description = "External Secrets Operator information"
   value = {
