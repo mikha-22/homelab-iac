@@ -2,10 +2,12 @@
 #  EXTERNAL SECRETS OPERATOR - SIMPLIFIED
 # ===================================================================
 
+# Load shared module
 module "shared" {
   source = "../shared"
 }
 
+# Create external secrets namespace
 resource "kubernetes_namespace" "external_secrets" {
   metadata {
     name = var.eso_namespace
@@ -16,6 +18,7 @@ resource "kubernetes_namespace" "external_secrets" {
   }
 }
 
+# Deploy the external_secrets using helm chart
 resource "helm_release" "external_secrets" {
   name       = "external-secrets"
   repository = "https://charts.external-secrets.io"
@@ -40,6 +43,7 @@ resource "helm_release" "external_secrets" {
   ]
 }
 
+# GCP Service Account secrets, fetching from GCSM
 resource "kubernetes_secret" "gcp_service_account" {
   metadata {
     name      = var.service_account_secret_k8s_name
@@ -57,6 +61,7 @@ resource "kubernetes_secret" "gcp_service_account" {
   ]
 }
 
+# Wait 2 mins for ESO
 resource "time_sleep" "wait_for_eso_ready" {
   depends_on = [helm_release.external_secrets]
   create_duration = "120s"

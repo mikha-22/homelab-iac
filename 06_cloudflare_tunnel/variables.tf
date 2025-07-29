@@ -1,8 +1,3 @@
-# ===================================================================
-#  SIMPLIFIED CLOUDFLARE TUNNEL VARIABLES
-#  Removed excessive validation and complex configurations
-# ===================================================================
-
 variable "tunnel_name" {
   description = "Cloudflare tunnel name"
   type        = string

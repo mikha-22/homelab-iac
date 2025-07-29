@@ -1,7 +1,4 @@
-# ===================================================================
-#  EXTERNAL SECRETS OPERATOR VARIABLES - SIMPLIFIED
-# ===================================================================
-
+# The ansible k3s installation would allow for kubectl on jumpbox machine
 variable "kubeconfig_path" {
   description = "Path to kubeconfig file"
   type        = string

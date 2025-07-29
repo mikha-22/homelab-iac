@@ -1,3 +1,8 @@
+# Data sources for authentication
+data "google_secret_manager_secret_version" "cloudflare_api_token" {
+  secret = "cloudflare-api-token"
+}
+
 provider "google" {
   project = "homelab-secret-manager"
   region  = "asia-southeast1"
@@ -18,12 +23,3 @@ provider "helm" {
 }
 
 provider "random" {}
-
-# Data sources for authentication
-data "google_secret_manager_secret_version" "cloudflare_api_token" {
-  secret = "cloudflare-api-token"
-}
-
-data "google_secret_manager_secret_version" "cloudflare_account_id" {
-  secret = "cloudflare-account-id"
-}

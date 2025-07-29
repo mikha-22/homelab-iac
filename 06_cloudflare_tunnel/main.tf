@@ -1,16 +1,20 @@
-# ===================================================================
-#  CLOUDFLARE TUNNEL - SIMPLIFIED PROVIDERS
-# ===================================================================
-
+# Load shared module
 module "shared" {
   source = "../shared"
 }
 
+# Fetch gcsm secret for cloudflare_account_id
+data "google_secret_manager_secret_version" "cloudflare_account_id" {
+  secret = "cloudflare-account-id"
+}
+
+# Generate password for cf tunnel secret
 resource "random_password" "tunnel_secret" {
   length  = 35
   special = false
 }
 
+# Provision the cloudflare tunnel
 resource "cloudflare_zero_trust_tunnel_cloudflared" "k3s_tunnel" {
   account_id = trimspace(data.google_secret_manager_secret_version.cloudflare_account_id.secret_data)
   name       = var.tunnel_name
@@ -18,27 +22,29 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "k3s_tunnel" {
   config_src = "cloudflare"
 }
 
+# Configure the tunnel
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "k3s_tunnel_config" {
   account_id = trimspace(data.google_secret_manager_secret_version.cloudflare_account_id.secret_data)
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.id
-
+  # Simple dumb-pipe *.domain 
   config {
     ingress_rule {
       hostname = "*.${module.shared.domain}"
       service  = "http://${var.traefik_service_name}.${var.traefik_namespace}.svc.cluster.local:80"
     }
-
+  # Ingress for milenika.dev main page
     ingress_rule {
       hostname = module.shared.domain
       service  = "http://${var.traefik_service_name}.${var.traefik_namespace}.svc.cluster.local:80"
     }
-
+  # Else, send http 404
     ingress_rule {
       service = "http_status:404"
     }
   }
 }
 
+# Make namespace cloudflared for the tunnel
 resource "kubernetes_namespace" "cloudflared" {
   metadata {
     name = "cloudflared"
@@ -47,7 +53,7 @@ resource "kubernetes_namespace" "cloudflared" {
     }
   }
 }
-
+# Make namespace for the External DNS
 resource "kubernetes_namespace" "external_dns" {
   metadata {
     name = "external-dns"
@@ -56,7 +62,7 @@ resource "kubernetes_namespace" "external_dns" {
     }
   }
 }
-
+# Generate kubernetes secret for the cloudflae api token
 resource "kubernetes_secret" "cloudflare_api_token_secret" {
   metadata {
     name      = "cloudflare-api-token-secret"
@@ -67,7 +73,7 @@ resource "kubernetes_secret" "cloudflare_api_token_secret" {
     apiKey = trimspace(data.google_secret_manager_secret_version.cloudflare_api_token.secret_data)
   }
 }
-
+# Deploy helm chart of external dns
 resource "helm_release" "external_dns" {
   name       = "external-dns"
   repository = "https://kubernetes-sigs.github.io/external-dns/"
@@ -102,7 +108,7 @@ resource "helm_release" "external_dns" {
     kubernetes_secret.cloudflare_api_token_secret
   ]
 }
-
+# Create secret for the cloudflare tunnel credential
 resource "kubernetes_secret" "tunnel_credentials" {
   metadata {
     name      = "tunnel-token"
@@ -113,7 +119,7 @@ resource "kubernetes_secret" "tunnel_credentials" {
     token = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.tunnel_token
   }
 }
-
+# Deploy the cloudflare tunnel
 resource "kubernetes_deployment" "cloudflared" {
   metadata {
     name      = "cloudflared"
@@ -169,7 +175,9 @@ resource "google_secret_manager_secret" "tunnel_cname_secret" {
 }
 
 resource "google_secret_manager_secret_version" "tunnel_cname_secret_version" {
+  # Target the secret slot 
   secret      = google_secret_manager_secret.tunnel_cname_secret.name
+  # Actual secret value
   secret_data = cloudflare_zero_trust_tunnel_cloudflared.k3s_tunnel.cname
 
   depends_on = [
