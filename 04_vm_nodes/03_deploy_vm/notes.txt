@@ -1,1 +1,0 @@
-somewhat redundant template creation and distribution (9999, 9000, 9010), can just do two, one per node

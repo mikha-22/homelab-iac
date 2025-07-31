@@ -1,10 +1,4 @@
-# ===================================================================
-#  NAS VM PROVIDERS - FIXED TO USE SHARED MODULE
-#  Removed duplicate data sources, now uses shared module
-# ===================================================================
 
-
-# --- PROVIDER CONFIGURATIONS ---
 provider "google" {
   project = "homelab-secret-manager"
   region  = "asia-southeast1"

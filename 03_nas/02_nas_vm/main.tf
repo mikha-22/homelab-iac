@@ -1,7 +1,4 @@
-# ===================================================================
-#  NAS VM - CLEAN CONFIGURATION
-# ===================================================================
-# Loading shared modules
+Loading shared modules
 module "shared" { 
   source = "../../shared"
 }

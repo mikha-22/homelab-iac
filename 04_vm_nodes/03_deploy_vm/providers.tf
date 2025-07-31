@@ -1,8 +1,3 @@
-# ===================================================================
-#  K3S VM DEPLOYMENT PROVIDERS - FIXED TO USE SHARED MODULE
-#  Removed duplicate data sources, now uses shared module
-# ===================================================================
-
 # Load shared module for centralized secret management
 module "shared" {
   source = "../../shared"

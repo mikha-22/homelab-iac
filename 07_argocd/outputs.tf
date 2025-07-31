@@ -1,7 +1,3 @@
-# ===================================================================
-#  ARGOCD OUTPUTS - ESSENTIAL ONLY
-# ===================================================================
-
 output "argocd" {
   description = "ArgoCD access information"
   value = {

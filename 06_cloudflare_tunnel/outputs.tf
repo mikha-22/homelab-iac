@@ -1,7 +1,3 @@
-# ===================================================================
-#  CLOUDFLARE TUNNEL OUTPUTS - ESSENTIAL ONLY
-# ===================================================================
-
 output "tunnel" {
   description = "Cloudflare tunnel information"
   value = {

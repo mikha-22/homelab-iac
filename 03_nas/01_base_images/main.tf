@@ -1,10 +1,4 @@
-# ===================================================================
-#  PROJECT: BASE IMAGES - UPDATED
-#  Manages the downloading of OS images to Proxmox.
-#  Shared module is now loaded in providers.tf, not here
-# ===================================================================
-
-# --- IMAGE DOWNLOAD RESOURCE ---
+# Downloads the image and store it on local disk node 1
 resource "proxmox_virtual_environment_download_file" "ubuntu_noble" {
   content_type = "iso"
   datastore_id = "local"

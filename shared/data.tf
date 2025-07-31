@@ -1,7 +1,3 @@
-# ===================================================================
-#  SHARED MODULE: DATA SOURCES
-# ===================================================================
-
 data "google_secret_manager_secret_version" "pm_api_token" {
   secret = "proxmox-api-token"
 }

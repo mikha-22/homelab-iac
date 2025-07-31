@@ -1,14 +1,9 @@
-# ===================================================================
-#  BASE IMAGE DOWNLOAD PROVIDERS - FIXED TO USE SHARED MODULE
-#  Removed duplicate data sources, now uses shared module
-# ===================================================================
-
 # Load shared module for centralized secret management
 module "shared" {
   source = "../../shared"
 }
 
-# --- PROVIDER CONFIGURATIONS ---
+# Provider config
 provider "google" {
   project = "homelab-secret-manager"
   region  = "asia-southeast1"

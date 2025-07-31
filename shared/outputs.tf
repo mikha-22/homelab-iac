@@ -1,8 +1,3 @@
-# ===================================================================
-#  SHARED MODULE: OUTPUTS - FIXED
-#  Added proxmox_api_token output so modules can use shared version
-# ===================================================================
-
 # Network Configuration
 output "network" {
   value = local.network

@@ -1,4 +1,3 @@
-
 # Means we're configuring the terraform for this module
 terraform {
   # Set version to above 1.5.0 or equal

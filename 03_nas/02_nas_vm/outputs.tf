@@ -1,8 +1,3 @@
-# ===================================================================
-#  SIMPLIFIED OUTPUTS - ESSENTIAL DATA ONLY
-#  Example for any module (e.g., 03_nas/02_nas_vm/outputs.tf)
-# ===================================================================
-
 output "nas_vm" {
   description = "NAS VM information"
   value = {

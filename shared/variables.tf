@@ -1,7 +1,3 @@
-# ===================================================================
-#  SHARED MODULE: INPUT VARIABLES
-# ===================================================================
-
 variable "network_subnet" {
   description = "Network subnet (e.g., 192.168.1)"
   type        = string
