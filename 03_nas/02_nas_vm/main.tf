@@ -1,4 +1,4 @@
-Loading shared modules
+#Loading shared modules
 module "shared" { 
   source = "../../shared"
 }
@@ -91,7 +91,7 @@ resource "null_resource" "register_nfs_storage" {
   triggers = { 
     vm_id = proxmox_virtual_environment_vm.nfs_server.id
     # nas_ip = module.shared.network.nas_server
-    proxmox_ssh_key = sensitive(trimspace(data.google_secret_manager_secret_version.pm_ssh_private_key.secret_data))
+    proxmox_ssh_key = proxmox_ssh_key = sensitive(module.shared.proxmox_ssh_private_key)
   }
 # Since there's no provider, we use null_resource and local-exec or remote-exec to do bash
 # SSH key for this node is set on the providers.tf so later we can change to remote-exec
