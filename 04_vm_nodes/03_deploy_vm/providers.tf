@@ -1,7 +1,3 @@
-# Load shared module for centralized secret management
-module "shared" {
-  source = "../../shared"
-}
 
 # --- PROVIDER CONFIGURATIONS ---
 provider "google" {

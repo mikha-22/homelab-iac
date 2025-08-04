@@ -143,7 +143,7 @@ resource "null_resource" "verify_cluster_ready" {
 
 # Fill the ansible template values, and generate the actual inventory file
 resource "local_file" "ansible_inventory" {
-  content = templatefile("${path.module}/../../05_k3s_ansible_bootstrap/inventory.yml.tpl", {
+    content = templatefile("${path.module}/../../05_k3s_ansible/inventory.yml.tpl", {
     master_ip    = module.shared.network.k3s_master
     worker_ip    = module.shared.network.k3s_worker_01
     master_vm_id = module.shared.vm_ids.k3s_master
@@ -155,7 +155,7 @@ resource "local_file" "ansible_inventory" {
     domain       = module.shared.domain
   })
 
-  filename = "${path.module}/../../05_k3s_ansible_bootstrap/inventory.yml"
+  filename = "${path.module}/../../05_k3s_ansible/inventory.yml"
 
   depends_on = [
     null_resource.verify_cluster_ready

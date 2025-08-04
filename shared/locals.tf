@@ -24,17 +24,17 @@ locals {
     nas = {
       cores  = var.nas_cores
       memory = var.nas_memory
-      disk   = 100
+      disk   = 120
     }
     k3s_master = {
       cores  = var.k3s_cores
       memory = var.k3s_memory
-      disk   = 40
+      disk   = 50
     }
     k3s_worker ={
       cores  = var.k3s_cores
       memory = var.k3s_memory
-      disk   = 40
+      disk   = 50
     }
   }
   
