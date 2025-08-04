@@ -1,15 +1,62 @@
 locals {
-  # Network configuration
-  network = {
-    subnet      = var.network_subnet
-    gateway     = "${var.network_subnet}.${var.gateway_ip}"
-    domain      = var.domain
+  # === INFRASTRUCTURE CONFIGURATION ===
+  # Edit these values to customize your homelab
+  
+  # Network Settings
+  network_config = {
+    subnet      = "192.168.1"
+    gateway_ip  = 1
+    domain      = "milenika.dev"
     dns_servers = ["1.1.1.1", "8.8.8.8"]
+  }
+  
+  # VM Resource Allocations
+  vm_resources = {
+    nas = {
+      cores  = 1
+      memory = 2048  # 2GB
+      disk   = 100   # GB
+    }
+    k3s_master = {
+      cores  = 8
+      memory = 8192  # 8GB
+      disk   = 40    # GB
+    }
+    k3s_worker = {
+      cores  = 12
+      memory = 16384  # 16GB
+      disk   = 40    # GB
+    }
+  }
+  
+  # VM ID Assignments
+  vm_ids = {
+    base_template   = 9999
+    master_template = 9000
+    worker_template = 9010
+    nas_server      = 225
+    k3s_master      = 181
+    k3s_worker_01   = 182
+  }
+  
+  # IP Address Assignments (last octet)
+  ip_assignments = {
+    nas_server    = 225
+    k3s_master    = 181
+    k3s_worker_01 = 182
+  }
+  
+  # === DERIVED VALUES (Don't edit these) ===
+  network = {
+    subnet      = local.network_config.subnet
+    gateway     = "${local.network_config.subnet}.${local.network_config.gateway_ip}"
+    domain      = local.network_config.domain
+    dns_servers = local.network_config.dns_servers
     
     # IP addresses
-    nas_server    = "${var.network_subnet}.${var.nas_ip}"
-    k3s_master    = "${var.network_subnet}.${var.k3s_master_ip}"
-    k3s_worker_01 = "${var.network_subnet}.${var.k3s_worker_ip}"
+    nas_server    = "${local.network_config.subnet}.${local.ip_assignments.nas_server}"
+    k3s_master    = "${local.network_config.subnet}.${local.ip_assignments.k3s_master}"
+    k3s_worker_01 = "${local.network_config.subnet}.${local.ip_assignments.k3s_worker_01}"
   }
   
   # Full IP addresses with CIDR
@@ -19,34 +66,8 @@ locals {
     k3s_worker_01 = "${local.network.k3s_worker_01}/24"
   }
   
-  # VM configurations
-  vm_configs = {
-    nas = {
-      cores  = var.nas_cores
-      memory = var.nas_memory
-      disk   = 120
-    }
-    k3s_master = {
-      cores  = var.k3s_cores
-      memory = var.k3s_memory
-      disk   = 50
-    }
-    k3s_worker ={
-      cores  = var.k3s_cores
-      memory = var.k3s_memory
-      disk   = 50
-    }
-  }
-  
-  # VM IDs
-  vm_ids = {
-    base_template   = var.base_template_id
-    master_template = 9000
-    worker_template = 9010
-    nas_server      = var.nas_vm_id
-    k3s_master      = var.k3s_master_vm_id
-    k3s_worker_01   = var.k3s_worker_vm_id
-  }
+  # Use the centralized VM resources
+  vm_configs = local.vm_resources
   
   # Simple tags
   common_tags = ["homelab", "terraform"]
